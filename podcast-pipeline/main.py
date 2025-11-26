@@ -112,6 +112,8 @@ def standardization(audio):
 @time_logger
 def speaker_diarization(audio):
     """
+    Pyannote based diarization module
+
     Perform speaker diarization on the given audio.
 
     Args:
@@ -174,7 +176,7 @@ def sortformer_dia(predicted_segments):
             'start': start,
             'end': end
         })
-
+    
     df = pd.DataFrame(rows, columns=['segment','label','speaker','start','end'])
     df = df.sort_values(by='start').reset_index(drop=True)
     return df

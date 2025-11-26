@@ -125,8 +125,17 @@ class VadFreeFasterWhisperPipeline(FasterWhisperPipeline):
                 f2 = int(seg["end"] * SAMPLE_RATE)
                 yield {"inputs": audio[f1:f2]}
 
+        if language is None:
+            detected_language = self.detect_language(audio)
+            if isinstance(detected_language, tuple):
+                language = detected_language[0]
+            else:
+                language = detected_language
+
+        if isinstance(language, tuple):
+            language = language[0]
+
         if self.tokenizer is None:
-            language = language or self.detect_language(audio)
             task = task or "transcribe"
             self.tokenizer = faster_whisper.tokenizer.Tokenizer(
                 self.model.hf_tokenizer,
