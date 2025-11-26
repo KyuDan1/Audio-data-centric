@@ -1,0 +1,24 @@
+{
+    "language": {
+        "multilingual": false,
+        "supported": [
+          "en"
+        ]
+      },
+    "entrypoint": {
+        "input_folder_path": "/home/taehong/taehong/audio_pipeline/test",
+        "SAMPLE_RATE": 16000
+    },
+    "separate": {
+        "step1": {
+            "model_path": "/home/taehong/taehong/audio_pipeline/checkpoints/UVR-MDX-NET-Inst_HQ_3.onnx",
+            "denoise": true,
+            "margin": 44100,
+            "chunks": 15,
+            "n_fft": 6144,
+            "dim_t": 8,
+            "dim_f": 3072
+        }
+    },
+    "huggingface_token": "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"
+}
