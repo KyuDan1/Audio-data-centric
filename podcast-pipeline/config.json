@@ -6,12 +6,12 @@
         ]
       },
     "entrypoint": {
-        "input_folder_path": "/home/taehong/taehong/audio_pipeline/test",
+        "input_folder_path": "audio_pipeline/test",
         "SAMPLE_RATE": 16000
     },
     "separate": {
         "step1": {
-            "model_path": "/home/taehong/taehong/audio_pipeline/checkpoints/UVR-MDX-NET-Inst_HQ_3.onnx",
+            "model_path": "audio_pipeline/checkpoints/UVR-MDX-NET-Inst_HQ_3.onnx",
             "denoise": true,
             "margin": 44100,
             "chunks": 15,
@@ -20,5 +20,5 @@
             "dim_f": 3072
         }
     },
-    "huggingface_token": "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"
+    "huggingface_token": ""
 }
