@@ -819,7 +819,7 @@ def main_process(audio_path, save_path=None, audio_name=None,
     audio_name = audio_name or os.path.splitext(os.path.basename(audio_path))[0]
     suffix = "dia3" if args.dia3 else "ori"
     save_path = save_path or os.path.join(
-        os.path.dirname(audio_path).strip("/")[:-1] + "/_final/"+ "_processed_llm-twelve-cases" + f"-vad-{do_vad}"+ f"-diaModel-{suffix}" 
+        os.path.dirname(audio_path), "_final", "_processed_llm-twelve-cases" + f"-vad-{do_vad}"+ f"-diaModel-{suffix}"
         # initial prompt off or on
         + f"-initPrompt-{args.initprompt}"
         + f"-merge_gap-{args.merge_gap}" +f"-seg_th-{args.seg_th}"+ f"-cl_min-{args.min_cluster_size}" +f"-cl-th-{args.clust_th}"+ f"-LLM-{LLM}", audio_name
