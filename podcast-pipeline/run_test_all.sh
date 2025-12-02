@@ -24,7 +24,8 @@ initprompt_flags=(--no-initprompt)
 seg_ths=(0.11)
 min_cluster_sizes=(11)
 clust_ths=(0.5)
-
+#ASRMoE=(--ASRMoE --no-ASRMoE)
+ASRMoE=(--no-ASRMoE)
 # 추가된 MERGE_GAP 조합
 # merge_gaps=(0.5 1 1.5 2)
 # 0.5와 2가 똑같이 나옴.
@@ -39,15 +40,17 @@ for folder in "${folders[@]}"; do
             for min_cluster in "${min_cluster_sizes[@]}"; do
               for clust in "${clust_ths[@]}"; do
                 for merge_gap in "${merge_gaps[@]}"; do
-                  echo "▶ Folder: ${folder}, ${vad}, ${dia3}, ${initprompt}, LLM=${llm}, seg_th=${seg}, min_cluster_size=${min_cluster}, clust_th=${clust}, merge_gap=${merge_gap}, korean=${korean}"
-                  python main_original.py \
-                    --input_folder_path "${folder}" \
-                    ${vad} ${dia3} ${initprompt} \
-                    --LLM "${llm}" \
-                    --seg_th "${seg}" \
-                    --min_cluster_size "${min_cluster}" \
-                    --clust_th "${clust}" \
-                    --merge_gap "${merge_gap}"
+                  for asrmoe in "${ASRMoE[@]}"; do
+                    echo "▶ Folder: ${folder}, ${vad}, ${dia3}, ${initprompt}, LLM=${llm}, seg_th=${seg}, min_cluster_size=${min_cluster}, clust_th=${clust}, merge_gap=${merge_gap}, ${asrmoe}, korean=${korean}"
+                    python main_original_ASR_MoE.py \
+                      --input_folder_path "${folder}" \
+                      ${vad} ${dia3} ${initprompt} ${asrmoe} \
+                      --LLM "${llm}" \
+                      --seg_th "${seg}" \
+                      --min_cluster_size "${min_cluster}" \
+                      --clust_th "${clust}" \
+                      --merge_gap "${merge_gap}"
+                  done
                 done
               done
             done
