@@ -2,7 +2,7 @@
     "language": {
         "multilingual": false,
         "supported": [
-          "en"
+          "en", "ko", "ja", "zh", "es", "fr", "de", "it", "pt", "ru", "ar", "hi"
         ]
       },
     "entrypoint": {
