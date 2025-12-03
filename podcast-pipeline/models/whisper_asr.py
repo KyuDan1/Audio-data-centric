@@ -11,6 +11,7 @@ import tqdm
 from whisperx.audio import N_SAMPLES, SAMPLE_RATE, load_audio, log_mel_spectrogram
 from whisperx.types import TranscriptionResult, SingleSegment
 from whisperx.asr import WhisperModel, FasterWhisperPipeline, find_numeral_symbol_tokens
+import whisperx
 
 
 class VadFreeFasterWhisperPipeline(FasterWhisperPipeline):
@@ -197,6 +198,59 @@ class VadFreeFasterWhisperPipeline(FasterWhisperPipeline):
             )
 
         return {"segments": segments, "language": language}
+
+    def align_segments(
+        self,
+        segments: List[dict],
+        audio: Union[str, np.ndarray],
+        language: str,
+        device: str = "cuda",
+        return_char_alignments: bool = False,
+    ) -> dict:
+        """
+        Align transcribed segments to get word-level timestamps using WhisperX alignment.
+
+        Args:
+            segments (List[dict]): Transcribed segments from transcribe().
+            audio (Union[str, np.ndarray]): The input audio signal or path to audio file.
+            language (str): Language code for the alignment model.
+            device (str, optional): Device to run alignment on. Defaults to "cuda".
+            return_char_alignments (bool, optional): Whether to return character-level alignments. Defaults to False.
+
+        Returns:
+            dict: Aligned segments with word-level timestamps.
+        """
+        if isinstance(audio, str):
+            audio_array = load_audio(audio)
+        else:
+            audio_array = audio
+
+        # Load alignment model for the detected language
+        try:
+            model_a, metadata = whisperx.load_align_model(
+                language_code=language,
+                device=device
+            )
+        except Exception as e:
+            print(f"Warning: Could not load alignment model for language '{language}': {e}")
+            print("Returning segments without word-level alignment.")
+            return {"segments": segments, "word_segments": segments}
+
+        # Perform alignment
+        try:
+            aligned_result = whisperx.align(
+                segments,
+                model_a,
+                metadata,
+                audio_array,
+                device,
+                return_char_alignments=return_char_alignments
+            )
+            return aligned_result
+        except Exception as e:
+            print(f"Warning: Alignment failed: {e}")
+            print("Returning segments without word-level alignment.")
+            return {"segments": segments, "word_segments": segments}
 
 
 def load_asr_model(

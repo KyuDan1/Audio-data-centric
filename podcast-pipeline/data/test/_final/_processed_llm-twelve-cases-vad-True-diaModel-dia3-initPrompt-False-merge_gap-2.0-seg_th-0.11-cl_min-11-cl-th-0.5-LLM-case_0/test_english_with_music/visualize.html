@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Podcast Transcript Timeline</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .controls {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .toggle-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .toggle-btn {
+            padding: 8px 16px;
+            border: 2px solid #667eea;
+            border-radius: 6px;
+            background: white;
+            color: #667eea;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .toggle-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .search-box {
+            padding: 10px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            width: 300px;
+        }
+
+        .timeline-container {
+            padding: 30px;
+            overflow-x: auto;
+            overflow-y: auto;
+            max-height: 60vh;
+            background: #fafbfc;
+        }
+
+        .timeline {
+            position: relative;
+            min-width: fit-content;
+        }
+
+        .speaker-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            min-height: 60px;
+        }
+
+        .speaker-label {
+            position: sticky;
+            left: 0;
+            z-index: 10;
+            width: 140px;
+            padding: 8px 16px;
+            font-weight: 700;
+            font-size: 0.95em;
+            color: white;
+            border-radius: 8px;
+            text-align: center;
+            margin-right: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            background: white;
+            flex-shrink: 0;
+        }
+
+        .speaker-track {
+            position: relative;
+            flex: 1;
+            height: 60px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: visible;
+        }
+
+        .segment {
+            position: absolute;
+            height: 50px;
+            top: 5px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            overflow: hidden;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .segment.demucs-applied {
+            border: 3px solid #ffd700;
+            border-left: 8px solid #ffd700;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.4), inset 0 0 20px rgba(255, 215, 0, 0.1);
+            background-image: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 10px,
+                rgba(255, 255, 255, 0.1) 10px,
+                rgba(255, 255, 255, 0.1) 20px
+            );
+            position: relative;
+        }
+
+        .segment.demucs-applied::before {
+            content: '🎵';
+            position: absolute;
+            top: 2px;
+            left: 4px;
+            font-size: 14px;
+            z-index: 10;
+            filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+        }
+
+        .segment.no-demucs {
+            border-left: 8px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .segment:hover {
+            transform: translateY(-3px);
+            z-index: 100;
+            height: 56px;
+            top: 2px;
+        }
+
+        .segment.demucs-applied:hover {
+            box-shadow: 0 4px 12px rgba(255, 215, 0, 0.6), 0 0 15px rgba(255, 215, 0, 0.5);
+        }
+
+        .segment.no-demucs:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .segment.playing {
+            border: 3px solid #ffc107;
+            box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.3), 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 101;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.3), 0 4px 12px rgba(0, 0, 0, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 0 6px rgba(255, 193, 7, 0.5), 0 6px 16px rgba(0, 0, 0, 0.4);
+            }
+        }
+
+        .segment-content {
+            padding: 8px 12px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            color: white;
+        }
+
+        .segment-text {
+            font-size: 13px;
+            font-weight: 600;
+            line-height: 1.3;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .demucs-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            color: #000;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 800;
+            margin-left: 6px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            text-shadow: none;
+            letter-spacing: 0.5px;
+        }
+
+        .segment:hover .segment-text {
+            white-space: normal;
+            word-wrap: break-word;
+        }
+
+        .segment-time {
+            font-size: 10px;
+            opacity: 0.9;
+            margin-top: 2px;
+        }
+
+        .time-axis {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-left: 160px;
+            position: sticky;
+            top: 0;
+            background: #fafbfc;
+            z-index: 20;
+            padding-top: 10px;
+            padding-bottom: 10px;
+        }
+
+        .time-marker {
+            position: absolute;
+            font-size: 11px;
+            color: #6c757d;
+            font-weight: 600;
+        }
+
+        .stats {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px;
+            font-size: 1.2em;
+            color: #6c757d;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .audio-player {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            padding: 20px 30px;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+            min-height: 200px;
+        }
+
+        .audio-player-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            color: white;
+        }
+
+        .audio-info {
+            flex: 1;
+        }
+
+        .audio-speaker {
+            font-size: 0.9em;
+            opacity: 0.8;
+            margin-bottom: 4px;
+        }
+
+        .audio-text {
+            font-weight: 600;
+        }
+
+        .text-comparison {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .text-version {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 6px;
+        }
+
+        .text-version-label {
+            font-size: 11px;
+            opacity: 0.8;
+            text-transform: uppercase;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: #ffc107;
+        }
+
+        .text-version-content {
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .original-audio-section {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .original-audio-label {
+            font-size: 13px;
+            opacity: 0.8;
+            margin-bottom: 8px;
+        }
+
+        .audio-controls-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .legend {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: white;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .legend-color {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎙️ Podcast Transcript Timeline</h1>
+            <p>test_english_with_music</p>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <input type="text" class="search-box" id="searchBox" placeholder="Search transcript...">
+                <button class="btn btn-primary" onclick="searchTranscript()">🔍 Search</button>
+                <button class="btn btn-secondary" onclick="clearSearch()">Clear</button>
+            </div>
+            <div class="toggle-group">
+                <span style="font-weight: 600; font-size: 13px;">Text Source:</span>
+                <button class="toggle-btn active" onclick="changeTextSource('text')" id="btn-text">Final</button>
+                <button class="toggle-btn" onclick="changeTextSource('text_whisper')" id="btn-whisper">Whisper</button>
+                <button class="toggle-btn" onclick="changeTextSource('text_canary')" id="btn-canary">Canary</button>
+                <button class="toggle-btn" onclick="changeTextSource('text_parakeet')" id="btn-parakeet">Parakeet</button>
+                <button class="toggle-btn" onclick="changeTextSource('text_ensemble')" id="btn-ensemble">Ensemble</button>
+            </div>
+            <div class="control-group legend" id="legend"></div>
+            <div class="control-group">
+                <button class="btn btn-primary" onclick="stopAudio()">⏹ Stop</button>
+            </div>
+        </div>
+
+        <div id="loading" class="loading">Loading transcript...</div>
+
+        <div id="timeline" class="timeline-container hidden">
+            <div class="time-axis" id="timeAxis"></div>
+            <div class="timeline" id="timelineContent"></div>
+        </div>
+
+        <div class="stats hidden" id="stats">
+            <div class="stat-item">
+                <div class="stat-value" id="totalSegments">0</div>
+                <div class="stat-label">Total Segments</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="totalSpeakers">0</div>
+                <div class="stat-label">Speakers</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="totalDuration">0:00</div>
+                <div class="stat-label">Total Duration</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="audio-player" id="audioPlayer">
+        <div class="audio-player-content">
+            <div style="flex: 1;">
+                <div class="original-audio-section">
+                    <div class="original-audio-label">🎵 Original Audio (16kHz)</div>
+                    <div class="audio-controls-wrapper">
+                        <audio id="originalAudioElement" controls style="width: 400px; height: 32px;"></audio>
+                    </div>
+                </div>
+                <div class="audio-info">
+                    <div class="audio-speaker" id="currentSpeaker"></div>
+                    <div class="audio-text" id="currentText"></div>
+                </div>
+                <div class="text-comparison" id="textComparison"></div>
+            </div>
+            <div class="audio-controls">
+                <button class="btn btn-primary" onclick="stopAudio()">⏹ Stop</button>
+            </div>
+        </div>
+    </div>
+
+    <audio id="audioElement"></audio>
+
+    <script>
+        let transcriptData = [];
+        let currentSegmentElement = null;
+        let currentTextSource = 'text';
+        const audioElement = document.getElementById('audioElement');
+        const originalAudioElement = document.getElementById('originalAudioElement');
+        const originalAudioPath = 'test_english_with_music_original.mp3';
+
+        const speakerColors = {
+            'SPEAKER_00': '#e74c3c',
+            'SPEAKER_01': '#3498db',
+            'SPEAKER_02': '#2ecc71',
+            'SPEAKER_03': '#f39c12',
+            'SPEAKER_04': '#9b59b6',
+            'SPEAKER_05': '#1abc9c',
+            'SPEAKER_06': '#e67e22',
+            'SPEAKER_07': '#34495e',
+            'SPEAKER_08': '#e91e63',
+            'SPEAKER_09': '#00bcd4'
+        };
+
+        function getSpeakerColor(speaker) {
+            return speakerColors[speaker] || '#95a5a6';
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function changeTextSource(source) {
+            currentTextSource = source;
+
+            // Update button states
+            document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('btn-' + source.replace('text_', '').replace('text', 'text')).classList.add('active');
+
+            // Re-render timeline with new text source
+            renderTimeline(transcriptData);
+        }
+
+        async function loadTranscript() {
+            try {
+                const response = await fetch('test_english_with_music.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                transcriptData = await response.json();
+
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('timeline').classList.remove('hidden');
+                document.getElementById('stats').classList.remove('hidden');
+
+                renderTimeline(transcriptData);
+                updateStats(transcriptData);
+                createLegend();
+            } catch (error) {
+                document.getElementById('loading').innerHTML = `
+                    <div style="color: #e74c3c;">
+                        <h3>Error loading transcript</h3>
+                        <p>${error.message}</p>
+                        <p style="margin-top: 10px; font-size: 0.9em;">Make sure test_english_with_music.json is in the same directory as this HTML file.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function createLegend() {
+            const speakers = [...new Set(transcriptData.map(s => s.speaker))].sort();
+            const legend = document.getElementById('legend');
+            legend.innerHTML = '';
+
+            speakers.forEach(speaker => {
+                const item = document.createElement('div');
+                item.className = 'legend-item';
+                item.innerHTML = `
+                    <div class="legend-color" style="background: ${getSpeakerColor(speaker)}"></div>
+                    <span>${speaker}</span>
+                `;
+                legend.appendChild(item);
+            });
+        }
+
+        function renderTimeline(data) {
+            const timelineContent = document.getElementById('timelineContent');
+            const timeAxis = document.getElementById('timeAxis');
+            timelineContent.innerHTML = '';
+            timeAxis.innerHTML = '';
+
+            if (data.length === 0) {
+                timelineContent.innerHTML = '<div style="padding: 40px; text-align: center; color: #6c757d;">No data to display</div>';
+                return;
+            }
+
+            const maxTime = Math.max(...data.map(s => s.end));
+            const pixelsPerSecond = 100;
+            const timelineWidth = maxTime * pixelsPerSecond;
+
+            const speakers = [...new Set(data.map(s => s.speaker))].sort();
+
+            const timeMarkers = [];
+            for (let t = 0; t <= maxTime; t += 30) {
+                timeMarkers.push(t);
+            }
+            if (timeMarkers[timeMarkers.length - 1] < maxTime) {
+                timeMarkers.push(Math.ceil(maxTime));
+            }
+
+            timeMarkers.forEach(time => {
+                const marker = document.createElement('div');
+                marker.className = 'time-marker';
+                marker.textContent = formatTime(time);
+                marker.style.left = `${time * pixelsPerSecond}px`;
+                timeAxis.appendChild(marker);
+            });
+
+            speakers.forEach(speaker => {
+                const row = document.createElement('div');
+                row.className = 'speaker-row';
+
+                const color = getSpeakerColor(speaker);
+                const label = document.createElement('div');
+                label.className = 'speaker-label';
+                label.textContent = speaker;
+                label.style.background = color;
+
+                const track = document.createElement('div');
+                track.className = 'speaker-track';
+                track.style.width = `${timelineWidth}px`;
+
+                const speakerSegments = data.filter(s => s.speaker === speaker);
+                speakerSegments.forEach((segment, idx) => {
+                    const originalIndex = data.indexOf(segment);
+                    const segmentDiv = document.createElement('div');
+                    segmentDiv.className = 'segment ' + (segment.demucs ? 'demucs-applied' : 'no-demucs');
+                    segmentDiv.dataset.index = originalIndex;
+
+                    const start = segment.start * pixelsPerSecond;
+                    const width = (segment.end - segment.start) * pixelsPerSecond;
+
+                    segmentDiv.style.left = `${start}px`;
+                    segmentDiv.style.width = `${Math.max(width, 30)}px`;
+                    segmentDiv.style.background = color;
+
+                    const displayText = segment[currentTextSource] || segment.text;
+                    const demucsBadge = segment.demucs ? '<span class="demucs-badge">DEMUCS</span>' : '';
+
+                    segmentDiv.innerHTML = `
+                        <div class="segment-content">
+                            <div class="segment-text">${displayText}${demucsBadge}</div>
+                            <div class="segment-time">${formatTime(segment.start)}</div>
+                        </div>
+                    `;
+
+                    segmentDiv.onclick = () => playSegment(originalIndex);
+                    track.appendChild(segmentDiv);
+                });
+
+                row.appendChild(label);
+                row.appendChild(track);
+                timelineContent.appendChild(row);
+            });
+        }
+
+        function updateStats(data) {
+            const speakers = new Set(data.map(s => s.speaker));
+            const totalDuration = data.length > 0 ? Math.max(...data.map(s => s.end)) : 0;
+
+            document.getElementById('totalSegments').textContent = data.length;
+            document.getElementById('totalSpeakers').textContent = speakers.size;
+            document.getElementById('totalDuration').textContent = formatTime(totalDuration);
+        }
+
+        function playSegment(index) {
+            const segment = transcriptData[index];
+            const audioFile = `test_english_with_music_${index}.mp3`;
+
+            if (currentSegmentElement) {
+                currentSegmentElement.classList.remove('playing');
+            }
+
+            const segmentElement = document.querySelector(`[data-index="${index}"]`);
+            if (segmentElement) {
+                segmentElement.classList.add('playing');
+                currentSegmentElement = segmentElement;
+                segmentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            // Load segment audio
+            audioElement.src = audioFile;
+            audioElement.play().catch(error => {
+                console.error('Error playing audio:', error);
+                alert('Could not play audio file: ' + audioFile);
+                if (currentSegmentElement) {
+                    currentSegmentElement.classList.remove('playing');
+                }
+            });
+
+            // Load original audio with time offset
+            originalAudioElement.src = originalAudioPath + '#t=' + segment.start + ',' + segment.end;
+
+            document.getElementById('currentSpeaker').textContent = segment.speaker + (segment.demucs ? ' (DEMUCS Applied)' : ' (No DEMUCS)');
+            document.getElementById('currentText').textContent = segment[currentTextSource] || segment.text;
+
+            // Display all text versions
+            const textComparison = document.getElementById('textComparison');
+            textComparison.innerHTML = `
+                <div class="text-version">
+                    <div class="text-version-label">Whisper</div>
+                    <div class="text-version-content">${segment.text_whisper || 'N/A'}</div>
+                </div>
+                <div class="text-version">
+                    <div class="text-version-label">Canary</div>
+                    <div class="text-version-content">${segment.text_canary || 'N/A'}</div>
+                </div>
+                <div class="text-version">
+                    <div class="text-version-label">Parakeet</div>
+                    <div class="text-version-content">${segment.text_parakeet || 'N/A'}</div>
+                </div>
+                <div class="text-version">
+                    <div class="text-version-label">Ensemble</div>
+                    <div class="text-version-content">${segment.text_ensemble || 'N/A'}</div>
+                </div>
+            `;
+
+            audioElement.onended = () => {
+                if (currentSegmentElement) {
+                    currentSegmentElement.classList.remove('playing');
+                }
+            };
+        }
+
+        function stopAudio() {
+            audioElement.pause();
+            audioElement.currentTime = 0;
+            originalAudioElement.pause();
+            originalAudioElement.currentTime = 0;
+
+            if (currentSegmentElement) {
+                currentSegmentElement.classList.remove('playing');
+                currentSegmentElement = null;
+            }
+        }
+
+        function searchTranscript() {
+            const searchTerm = document.getElementById('searchBox').value.toLowerCase().trim();
+
+            if (!searchTerm) {
+                renderTimeline(transcriptData);
+                return;
+            }
+
+            const filtered = transcriptData.filter(segment =>
+                segment.text.toLowerCase().includes(searchTerm)
+            );
+
+            if (filtered.length === 0) {
+                document.getElementById('timelineContent').innerHTML =
+                    '<div style="padding: 40px; text-align: center; color: #6c757d;">No results found</div>';
+                return;
+            }
+
+            renderTimeline(filtered);
+
+            document.querySelectorAll('.segment-text').forEach(element => {
+                const text = element.textContent;
+                const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                element.innerHTML = text.replace(regex, '<span style="background: #ffc107; color: #000; padding: 2px 4px; border-radius: 3px;">$1</span>');
+            });
+        }
+
+        function clearSearch() {
+            document.getElementById('searchBox').value = '';
+            renderTimeline(transcriptData);
+        }
+
+        document.getElementById('searchBox').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                searchTranscript();
+            }
+        });
+
+        loadTranscript();
+    </script>
+</body>
+</html>

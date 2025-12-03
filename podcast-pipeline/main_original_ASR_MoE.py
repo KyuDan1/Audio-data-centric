@@ -19,6 +19,7 @@ import warnings
 import tempfile
 from openai import OpenAI
 import torch
+import requests
 from pyannote.audio.core.task import Specifications, Problem, Resolution
 
 # 기존에 작성하신 TorchVersion 외에 pyannote 관련 클래스들도 추가합니다.
@@ -48,6 +49,8 @@ from utils.logger import Logger, time_logger
 from models import separate_fast, dnsmos, whisper_asr, silero_vad
 import time
 import datetime
+from panns_inference import AudioTagging
+import soundfile as sf
 
 from nemo.collections.asr.models import SortformerEncLabelModel
 from nemo.collections.speechlm2.models import SALM
@@ -66,8 +69,7 @@ warnings.filterwarnings("ignore")
 audio_count = 0
 MAX_DIA_CHUNK_DURATION = 5 * 60  # 5 minutes
 MIN_SPLIT_SILENCE = 1.0  # seconds of silence required for splitting
-
-
+QWEN_3_OMNI_PORT = "11500"
 class RoverEnsembler:
     """
     ROVER(Recognizer Output Voting Error Reduction) 앙상블 구현.
@@ -250,6 +252,232 @@ def standardization(audio):
 
 
 # Step 2: Speaker Diarization
+@time_logger
+def detect_background_music(audio, threshold=0.3):
+    """
+    PANNs를 사용하여 배경음악이 있는지 검출합니다.
+
+    Args:
+        audio (dict): A dictionary containing the audio waveform and sample rate.
+        threshold (float): Music 확률 임계값. 이 값 이상이면 배경음악이 있다고 판단.
+
+    Returns:
+        tuple: (has_music: bool, music_prob: float)
+    """
+    logger.debug("Detecting background music using PANNs")
+
+    # PANNs는 32kHz 오디오를 기대하므로 리샘플링
+    waveform = audio["waveform"]
+    sample_rate = audio["sample_rate"]
+
+    if sample_rate != 32000:
+        waveform_32k = librosa.resample(waveform, orig_sr=sample_rate, target_sr=32000)
+    else:
+        waveform_32k = waveform
+
+    # Set custom PANNs data directory
+    panns_data_dir = '/mnt/ddn/kyudan/panns_data'
+    os.makedirs(panns_data_dir, exist_ok=True)
+
+    # Set environment variable for PANNs to use custom directory
+    os.environ['PANNS_DATA'] = panns_data_dir
+
+    # PANNs inference with custom checkpoint path
+    checkpoint_path = os.path.join(panns_data_dir, 'Cnn14_mAP=0.431.pth')
+    at = AudioTagging(checkpoint_path=checkpoint_path, device='cuda' if torch.cuda.is_available() else 'cpu')
+    (clipwise_output, embedding) = at.inference(waveform_32k[None, :])
+
+    # Get labels
+    labels = at.labels
+
+    # Find Music probability
+    music_idx = labels.index('Music') if 'Music' in labels else None
+    if music_idx is not None:
+        music_prob = float(clipwise_output[0, music_idx])
+        logger.info(f"Music probability: {music_prob:.3f}")
+        has_music = music_prob > threshold
+        return has_music, music_prob
+    else:
+        logger.warning("Music label not found in PANNs output")
+        return False, 0.0
+
+
+def detect_segment_background_music(segment_audio, sample_rate, threshold=0.3):
+    """
+    세그먼트 오디오에 대해 배경음악이 있는지 검출합니다.
+
+    Args:
+        segment_audio (np.ndarray): 세그먼트 오디오 waveform.
+        sample_rate (int): 샘플 레이트.
+        threshold (float): Music 확률 임계값.
+
+    Returns:
+        tuple: (has_music: bool, music_prob: float)
+    """
+    # PANNs는 32kHz 오디오를 기대하므로 리샘플링
+    if sample_rate != 32000:
+        waveform_32k = librosa.resample(segment_audio, orig_sr=sample_rate, target_sr=32000)
+    else:
+        waveform_32k = segment_audio
+
+    # PANNs 모델이 요구하는 최소 길이 체크 (약 1초 = 32000 samples)
+    # Cnn14 모델의 pooling 계층을 통과하려면 최소한의 길이가 필요
+    min_length = 32000  # 1 second at 32kHz
+    if len(waveform_32k) < min_length:
+        logger.warning(f"Segment too short for music detection ({len(waveform_32k)/32000:.2f}s < 1.0s), skipping music detection")
+        return False, 0.0
+
+    # Set custom PANNs data directory
+    panns_data_dir = '/mnt/ddn/kyudan/panns_data'
+    os.makedirs(panns_data_dir, exist_ok=True)
+    os.environ['PANNS_DATA'] = panns_data_dir
+
+    # PANNs inference with custom checkpoint path
+    checkpoint_path = os.path.join(panns_data_dir, 'Cnn14_mAP=0.431.pth')
+    at = AudioTagging(checkpoint_path=checkpoint_path, device='cuda' if torch.cuda.is_available() else 'cpu')
+    (clipwise_output, embedding) = at.inference(waveform_32k[None, :])
+
+    # Get labels
+    labels = at.labels
+
+    # Find Music probability
+    music_idx = labels.index('Music') if 'Music' in labels else None
+    if music_idx is not None:
+        music_prob = float(clipwise_output[0, music_idx])
+        has_music = music_prob > threshold
+        return has_music, music_prob
+    else:
+        return False, 0.0
+
+
+def remove_segment_background_music_demucs(segment_audio, sample_rate):
+    """
+    세그먼트 오디오에서 Demucs를 사용하여 배경음악을 제거하고 vocal만 추출합니다.
+
+    Args:
+        segment_audio (np.ndarray): 세그먼트 오디오 waveform.
+        sample_rate (int): 샘플 레이트.
+
+    Returns:
+        np.ndarray: Vocal-only waveform 또는 실패 시 원본.
+    """
+    # Create temporary directory for demucs output
+    temp_dir = tempfile.mkdtemp(prefix="demucs_seg_")
+
+    try:
+        # Save segment audio to temporary file
+        temp_input = os.path.join(temp_dir, "segment.wav")
+        sf.write(temp_input, segment_audio, sample_rate)
+
+        # Run demucs to separate vocals
+        import subprocess
+        demucs_output_dir = os.path.join(temp_dir, "separated")
+
+        cmd = [
+            "python", "-m", "demucs.separate",
+            "-n", "htdemucs",
+            "--two-stems", "vocals",
+            "-o", demucs_output_dir,
+            temp_input
+        ]
+
+        result = subprocess.run(cmd, capture_output=True, text=True)
+
+        if result.returncode != 0:
+            logger.error(f"Demucs failed for segment: {result.stderr}")
+            return segment_audio
+
+        # Load separated vocal track
+        vocal_path = os.path.join(demucs_output_dir, "htdemucs", "segment", "vocals.wav")
+
+        if not os.path.exists(vocal_path):
+            logger.error(f"Vocal track not found at {vocal_path}")
+            return segment_audio
+
+        # Load vocal-only audio
+        vocal_waveform, _ = librosa.load(vocal_path, sr=sample_rate, mono=True)
+        return vocal_waveform.astype(np.float32)
+
+    except Exception as e:
+        logger.error(f"Error during segment Demucs processing: {e}")
+        return segment_audio
+    finally:
+        # Cleanup temporary directory
+        if os.path.exists(temp_dir):
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+
+@time_logger
+def preprocess_segments_with_demucs(segment_list, audio, use_demucs=False):
+    """
+    ASR 전에 세그먼트별로 배경음악을 검출하고 demucs를 적용합니다.
+
+    Args:
+        segment_list (list): 세그먼트 리스트 (start, end, speaker 포함)
+        audio (dict): 오디오 딕셔너리 (waveform, sample_rate 포함)
+        use_demucs (bool): demucs 적용 여부
+
+    Returns:
+        tuple: (updated_audio, segment_demucs_flags)
+            - updated_audio: demucs가 적용된 오디오 딕셔너리
+            - segment_demucs_flags: 각 세그먼트의 demucs 적용 여부 리스트
+    """
+    if not use_demucs:
+        logger.info("Demucs preprocessing skipped (flag disabled)")
+        return audio, [False] * len(segment_list)
+
+    logger.info(f"Preprocessing {len(segment_list)} segments with background music detection and removal")
+
+    waveform = audio["waveform"].copy()
+    sample_rate = audio["sample_rate"]
+    segment_demucs_flags = []
+
+    for idx, segment in enumerate(segment_list):
+        start_time = segment["start"]
+        end_time = segment["end"]
+        start_frame = int(start_time * sample_rate)
+        end_frame = int(end_time * sample_rate)
+
+        segment_audio = waveform[start_frame:end_frame]
+
+        # Detect background music
+        has_music, music_prob = detect_segment_background_music(segment_audio, sample_rate, threshold=0.3)
+        logger.debug(f"Segment {idx} ({start_time:.2f}s - {end_time:.2f}s): Music probability = {music_prob:.3f}")
+
+        if has_music:
+            logger.info(f"Segment {idx}: Background music detected (prob={music_prob:.3f}), applying Demucs...")
+            # Apply demucs to remove background music
+            vocal_audio = remove_segment_background_music_demucs(segment_audio, sample_rate)
+            # Replace the segment in the waveform
+            waveform[start_frame:end_frame] = vocal_audio[:len(segment_audio)]  # Ensure same length
+            segment_demucs_flags.append(True)
+            logger.info(f"Segment {idx}: Demucs applied successfully")
+        else:
+            logger.debug(f"Segment {idx}: No significant background music (prob={music_prob:.3f})")
+            segment_demucs_flags.append(False)
+
+    # Update audio dictionary with processed waveform
+    updated_audio = audio.copy()
+    updated_audio["waveform"] = waveform
+
+    # Also update audio_segment for export
+    from pydub import AudioSegment as PydubAudioSegment
+    # Convert numpy array to AudioSegment
+    # Normalize to int16 range
+    waveform_int16 = (waveform * 32767).astype(np.int16)
+    updated_audio_segment = PydubAudioSegment(
+        waveform_int16.tobytes(),
+        frame_rate=sample_rate,
+        sample_width=2,
+        channels=1
+    )
+    updated_audio["audio_segment"] = updated_audio_segment
+
+    logger.info(f"Demucs preprocessing completed: {sum(segment_demucs_flags)}/{len(segment_list)} segments processed")
+
+    return updated_audio, segment_demucs_flags
+
+
 @time_logger
 def speaker_diarization(audio):
     """
@@ -459,19 +687,25 @@ def asr(vad_segments, audio):
             return []
 
 @time_logger
-def asr_MoE(vad_segments, audio):
+def asr_MoE(vad_segments, audio, segment_demucs_flags=None, enable_word_timestamps=False, device="cuda"):
     """
     Perform Automatic Speech Recognition (ASR) on the VAD segments of the given audio.
 
     Args:
         vad_segments (list): List of VAD segments with start and end times.
         audio (dict): A dictionary containing the audio waveform and sample rate.
+        segment_demucs_flags (list): List of booleans indicating which segments had demucs applied.
+        enable_word_timestamps (bool): Whether to enable WhisperX word-level timestamp alignment.
+        device (str): Device to use for alignment ("cuda" or "cpu").
 
     Returns:
-        list: A list of ASR results with transcriptions and language details.
+        tuple: (list of ASR results, whisper processing time in seconds, alignment time in seconds)
     """
     if len(vad_segments) == 0:
-        return []
+        return [], 0.0, 0.0
+
+    if segment_demucs_flags is None:
+        segment_demucs_flags = [False] * len(vad_segments)
 
     temp_audio = audio["waveform"]
     start_time = vad_segments[0]["start"]
@@ -506,8 +740,10 @@ def asr_MoE(vad_segments, audio):
 
         # if no valid segment, return empty
         if len(valid_vad_segments) == 0:
-            return []
+            return [], 0.0, 0.0
         all_transcribe_result = []
+        total_whisper_time = 0.0
+        total_alignment_time = 0.0
         logger.debug(f"valid_vad_segments_language: {valid_vad_segments_language}")
         unique_languages = list(set(valid_vad_segments_language))
         logger.debug(f"unique_languages: {unique_languages}")
@@ -521,7 +757,7 @@ def asr_MoE(vad_segments, audio):
                 if x == language
             ]
             # bacthed trascription
-
+            whisper_start_time = time.time()
             transcribe_result_temp = asr_model.transcribe(
                 temp_audio,
                 vad_segments,
@@ -529,16 +765,41 @@ def asr_MoE(vad_segments, audio):
                 language=language,
                 print_progress=True,
             )
+            whisper_end_time = time.time()
+            whisper_time = whisper_end_time - whisper_start_time
+            total_whisper_time += whisper_time
             result = transcribe_result_temp["segments"]
+
+            # WhisperX alignment for word-level timestamps
+            if enable_word_timestamps:
+                logger.info(f"Performing WhisperX alignment for language: {language}")
+                alignment_start = time.time()
+                aligned_result = asr_model.align_segments(
+                    result,
+                    temp_audio,
+                    language,
+                    device=device
+                )
+                alignment_end = time.time()
+                alignment_time = alignment_end - alignment_start
+                total_alignment_time += alignment_time
+                result = aligned_result.get("segments", result)
+                logger.info(f"Alignment completed in {alignment_time:.2f}s")
+
             # restore the segment annotation
             for idx, segment in enumerate(result):
                 result[idx]["start"] += start_time
                 result[idx]["end"] += start_time
                 result[idx]["language"] = transcribe_result_temp["language"]
+                # Adjust word timestamps if present
+                if enable_word_timestamps and "words" in result[idx]:
+                    for word in result[idx]["words"]:
+                        word["start"] += start_time
+                        word["end"] += start_time
             all_transcribe_result.extend(result)
         # sort by start time
         all_transcribe_result = sorted(all_transcribe_result, key=lambda x: x["start"])
-        return all_transcribe_result
+        return all_transcribe_result, total_whisper_time, total_alignment_time
     else:
         logger.debug("Multilingual flag is off")
         language, prob = asr_model.detect_language(temp_audio)
@@ -546,6 +807,7 @@ def asr_MoE(vad_segments, audio):
         logger.info(f"Supported languages: {supported_languages}")
         if language in supported_languages and prob > 0.8:
             # Whisper transcription
+            whisper_start_time = time.time()
             transcribe_result = asr_model.transcribe(
                 temp_audio,
                 vad_segments,
@@ -554,9 +816,28 @@ def asr_MoE(vad_segments, audio):
                 task="transcribe",
                 print_progress=True,
             )
+            whisper_end_time = time.time()
+            whisper_time = whisper_end_time - whisper_start_time
 
             # Build result with both Whisper, Parakeet, and Canary outputs
             result = transcribe_result["segments"]
+
+            # WhisperX alignment for word-level timestamps
+            alignment_time = 0.0
+            if enable_word_timestamps:
+                logger.info(f"Performing WhisperX alignment for language: {language}")
+                alignment_start = time.time()
+                aligned_result = asr_model.align_segments(
+                    result,
+                    temp_audio,
+                    language,
+                    device=device
+                )
+                alignment_end = time.time()
+                alignment_time = alignment_end - alignment_start
+                result = aligned_result.get("segments", result)
+                logger.info(f"Alignment completed in {alignment_time:.2f}s")
+
             rover = RoverEnsembler()
 
             for idx, segment in enumerate(result):
@@ -599,9 +880,93 @@ def asr_MoE(vad_segments, audio):
                 result[idx]["start"] += start_time
                 result[idx]["end"] += start_time
                 result[idx]["language"] = transcribe_result["language"]
-            return result
+                # Add demucs flag from preprocessing
+                result[idx]["demucs"] = segment_demucs_flags[idx] if idx < len(segment_demucs_flags) else False
+                # Adjust word timestamps if present
+                if enable_word_timestamps and "words" in result[idx]:
+                    for word in result[idx]["words"]:
+                        word["start"] += start_time
+                        word["end"] += start_time
+            return result, whisper_time, alignment_time
         else:
-            return []
+            return [], 0.0, 0.0
+
+def add_qwen3omni_caption(filtered_list, audio, save_path):
+    """
+    ASR 결과의 각 세그먼트에 대해 Qwen3-Omni API를 호출하여 audio caption을 추가합니다.
+
+    Args:
+        filtered_list (list): ASR 결과 세그먼트 리스트
+        audio (dict): 오디오 딕셔너리 (waveform, sample_rate 포함)
+        save_path (str): 임시 오디오 파일을 저장할 경로
+
+    Returns:
+        tuple: (qwen3omni_caption이 추가된 세그먼트 리스트, 처리 시간(초))
+    """
+    import soundfile as sf
+
+    logger.info(f"Adding Qwen3-Omni captions to {len(filtered_list)} segments...")
+    caption_start_time = time.time()
+
+    for idx, segment in enumerate(filtered_list):
+        try:
+            # 세그먼트 오디오 추출
+            start_time = segment["start"]
+            end_time = segment["end"]
+            sample_rate = audio["sample_rate"]
+            start_frame = int(start_time * sample_rate)
+            end_frame = int(end_time * sample_rate)
+            segment_audio = audio["waveform"][start_frame:end_frame]
+
+            # 임시 오디오 파일로 저장
+            temp_audio_path = os.path.join(save_path, f"temp_segment_{idx:05d}.wav")
+            sf.write(temp_audio_path, segment_audio, sample_rate)
+
+            # Qwen3-Omni API 호출
+            url = f"http://localhost:{QWEN_3_OMNI_PORT}/v1/chat/completions"
+            headers = {"Content-Type": "application/json"}
+
+            # 로컬 파일을 base64로 인코딩하거나 URL로 제공해야 합니다
+            # 여기서는 임시 파일 경로를 사용 (실제로는 서버가 접근 가능한 URL이 필요할 수 있음)
+            data = {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "audio_url",
+                                "audio_url": {"url": f"file://{temp_audio_path}"}
+                            }
+                        ]
+                    }
+                ]
+            }
+
+            response = requests.post(url, headers=headers, json=data, timeout=30)
+
+            if response.status_code == 200:
+                result = response.json()
+                # Extract content from response
+                caption = result.get("choices", [{}])[0].get("message", {}).get("content", "")
+                segment["qwen3omni_caption"] = caption
+                logger.debug(f"Segment {idx}: Successfully added Qwen3-Omni caption")
+            else:
+                logger.warning(f"Segment {idx}: API call failed with status {response.status_code}")
+                segment["qwen3omni_caption"] = ""
+
+            # 임시 파일 삭제
+            if os.path.exists(temp_audio_path):
+                os.remove(temp_audio_path)
+
+        except Exception as e:
+            logger.error(f"Segment {idx}: Error calling Qwen3-Omni API: {e}")
+            segment["qwen3omni_caption"] = ""
+
+    caption_end_time = time.time()
+    caption_processing_time = caption_end_time - caption_start_time
+
+    logger.info("Qwen3-Omni caption addition completed")
+    return filtered_list, caption_processing_time
 
 # 비용 계산 함수
 def calculate_cost(model_name: str, input_tokens: int, output_tokens: int) -> float:
@@ -1103,7 +1468,8 @@ def ko_process_json(input_list: str) -> None:
         
 def main_process(audio_path, save_path=None, audio_name=None,
                  do_vad = False,
-                 LLM = ""):
+                 LLM = "",
+                 use_demucs = False):
 
     if not audio_path.endswith((".mp3", ".wav", ".flac", ".m4a", ".aac")):
         logger.warning(f"Unsupported file type: {audio_path}")
@@ -1128,6 +1494,10 @@ def main_process(audio_path, save_path=None, audio_name=None,
     )
     audio = standardization(audio_path)
     diar_chunks, temp_chunk_dir = prepare_diarization_chunks(audio_path, audio)
+
+    # Calculate total audio duration
+    audio_duration = len(audio["waveform"]) / audio["sample_rate"]
+    logger.info(f"Total audio duration: {audio_duration:.2f} seconds")
 
     logger.info("Step 2: Speaker Diarization")
     dia_start = time.time()
@@ -1155,50 +1525,54 @@ def main_process(audio_path, save_path=None, audio_name=None,
     ori_list = df_to_list(speakerdia)
     dia_end = time.time()
 
-    # if do_vad == True:
-    #     print("VAD is True")
-    #     vad_list = vad.vad(speakerdia, audio)
-    #     segment_list = cut_by_speaker_label(vad_list)  # post process after vad
-
-    # else:
-    #     if LLM == 'case_1':
-    #         print("case_1")
-    #     elif (LLM == 'case_0') or (LLM == 'case_2'):    
-    #         print("case_0 or case_2")
-            
-    #         vad_list = vad.vad(speakerdia, audio)
-    #         segment_list = cut_by_speaker_label(vad_list)
+    # Calculate VAD + Sortformer RT factor
+    vad_sortformer_processing_time = dia_end - dia_start
+    vad_sortformer_rt = vad_sortformer_processing_time / audio_duration if audio_duration > 0 else 0
+    logger.info(f"VAD + Sortformer - Processing time: {vad_sortformer_processing_time:.2f}s, RT factor: {vad_sortformer_rt:.4f}")
 
     # TEST
     ######################
     segment_list = ori_list
     segment_list = split_long_segments(segment_list)
     ######################
-    
-    logger.info("Step 4: ASR")
+
+    # Step 3: Background Music Detection and Removal (preprocess segments before ASR)
+    logger.info("Step 3: Background Music Detection and Removal")
+    audio, segment_demucs_flags = preprocess_segments_with_demucs(segment_list, audio, use_demucs=use_demucs)
+
+    logger.info("Step 4: ASR (Automatic Speech Recognition)")
     if args.ASRMoE:
         asr_start = time.time()
 
-        asr_result = asr_MoE(segment_list, audio)
-        
+        asr_result, whisper_time, alignment_time = asr_MoE(
+            segment_list,
+            audio,
+            segment_demucs_flags=segment_demucs_flags,
+            enable_word_timestamps=args.whisperx_word_timestamps,
+            device=device_name
+        )
+
         asr_end = time.time()
 
         dia_time = dia_end-dia_start
-        asr_time = asr_end-asr_start
+        asr_time = whisper_time
     else:
         asr_start = time.time()
 
         asr_result = asr(segment_list, audio)
-        
+
         asr_end = time.time()
 
         dia_time = dia_end-dia_start
         asr_time = asr_end-asr_start
+        alignment_time = 0.0
 
-    # print(f"ASR 결과를 저장했습니다: {output_path}")
-    print(f"diarization time: {dia_time}")
-    print(f"asr_time: {asr_time}")
+    # Calculate Whisper large v3 RT factor
+    whisper_processing_time = asr_time
+    whisper_rt = whisper_processing_time / audio_duration if audio_duration > 0 else 0
 
+    # Calculate WhisperX alignment RT factor
+    alignment_rt = alignment_time / audio_duration if audio_duration > 0 else 0
 
     if LLM == "case_0":
         print("LLM case_0")
@@ -1246,11 +1620,46 @@ def main_process(audio_path, save_path=None, audio_name=None,
 
     else:
         raise ValueError("LLM 변수는 case_0, case_1, case_2 중 하나여야 한다.")
-    
+
     ############################################################################################################
         # LLM post diarization end
-     
-    logger.info("Step 6: write result into MP3 and JSON file")
+
+    # Step 4.5: Add Qwen3-Omni captions (if enabled)
+    caption_time = 0.0
+    if args.qwen3omni:
+        logger.info("Step 4.5: Adding Qwen3-Omni captions")
+        filtered_list, caption_time = add_qwen3omni_caption(filtered_list, audio, save_path)
+    else:
+        logger.info("Step 4.5: Qwen3-Omni caption generation skipped (flag disabled)")
+
+    # Calculate Qwen3-Omni RT factor
+    caption_rt = caption_time / audio_duration if audio_duration > 0 else 0
+
+    # Print all timing information
+    print(f"\n{'='*60}")
+    print(f"Audio duration: {audio_duration:.2f} seconds ({audio_duration/60:.2f} minutes)")
+    print(f"{'='*60}")
+    print(f"VAD + Sortformer:")
+    print(f"  - Processing time: {dia_time:.2f} seconds")
+    print(f"  - RT factor: {vad_sortformer_rt:.4f}")
+    print(f"{'='*60}")
+    print(f"Whisper large v3:")
+    print(f"  - Processing time: {asr_time:.2f} seconds")
+    print(f"  - RT factor: {whisper_rt:.4f}")
+    print(f"{'='*60}")
+    if args.whisperx_word_timestamps:
+        print(f"WhisperX Alignment:")
+        print(f"  - Processing time: {alignment_time:.2f} seconds")
+        print(f"  - RT factor: {alignment_rt:.4f}")
+        print(f"{'='*60}")
+    if args.qwen3omni:
+        print(f"Qwen3-Omni Caption:")
+        print(f"  - Processing time: {caption_time:.2f} seconds")
+        print(f"  - RT factor: {caption_rt:.4f}")
+        print(f"{'='*60}")
+    print()
+
+    logger.info("Step 5: Write result into MP3 and JSON file")
     print(f"Exporting {len(filtered_list)} segments to MP3 and JSON...")
     export_to_mp3(audio, filtered_list, save_path, audio_name)
 
@@ -1259,9 +1668,43 @@ def main_process(audio_path, save_path=None, audio_name=None,
     if args.korean:
         ko_process_json(filtered_list)
 
+    # Prepare output with RT factor metrics
+    output_data = {
+        "metadata": {
+            "audio_duration_seconds": audio_duration,
+            "audio_duration_minutes": audio_duration / 60,
+            "vad_sortformer": {
+                "processing_time_seconds": vad_sortformer_processing_time,
+                "rt_factor": vad_sortformer_rt
+            },
+            "whisper_large_v3": {
+                "processing_time_seconds": whisper_processing_time,
+                "rt_factor": whisper_rt
+            },
+            "total_segments": len(filtered_list)
+        },
+        "segments": filtered_list
+    }
+
+    # Add WhisperX alignment metadata if enabled
+    if args.whisperx_word_timestamps:
+        output_data["metadata"]["whisperx_alignment"] = {
+            "processing_time_seconds": alignment_time,
+            "rt_factor": alignment_rt,
+            "enabled": True
+        }
+
+    # Add Qwen3-Omni caption metadata if enabled
+    if args.qwen3omni:
+        output_data["metadata"]["qwen3omni_caption"] = {
+            "processing_time_seconds": caption_time,
+            "rt_factor": caption_rt,
+            "enabled": True
+        }
+
     final_path = os.path.join(save_path, audio_name + ".json")
     with open(final_path, "w", encoding="utf-8") as f:
-        json.dump(filtered_list, f, ensure_ascii=False, indent=2)
+        json.dump(output_data, f, ensure_ascii=False, indent=2)
 
     logger.info(f"All done, Saved to: {final_path}")
     print(f"Processing complete! Results saved to: {final_path}")
@@ -1374,6 +1817,27 @@ if __name__ == "__main__":
         help="parakeet",
     )
 
+    parser.add_argument(
+        "--demucs",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Enable background music detection and removal using PANNs and Demucs",
+    )
+
+    parser.add_argument(
+        "--whisperx_word_timestamps",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Enable WhisperX word-level timestamps with alignment",
+    )
+
+    parser.add_argument(
+        "--qwen3omni",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Enable Qwen3-Omni audio captioning for each segment",
+    )
+
 
     args = parser.parse_args()
 
@@ -1445,6 +1909,30 @@ if __name__ == "__main__":
     logger.debug(" * Loading ASR Model")
 
     if args.initprompt == True:
+        asr_options_dict = {
+            #"log_prob_threshold": -1.0,
+            #"no_speech_threshold": 0.6,
+            # 生于忧患,死于安乐。岂不快哉?当然,嗯,呃,就,这样,那个,哪个,啊,呀,哎呀,哎哟,唉哇,啧,唷,哟,噫!微斯人,吾谁与归?ええと、あの、ま、そう、ええ。äh, hm, so, tja, halt, eigentlich. euh, quoi, bah, ben, tu vois, tu sais, t'sais, eh bien, du coup. genre, comme, style. 응,어,그,음
+
+            # 원래 코드의 initial prompt
+            # "initial_prompt": "ha. heh. Mm, hmm. Mm hm. uh. Uh huh. Mm huh. Uh. hum Uh. Ah. Uh hu. Like. you know. Yeah. I mean. right. Actually. Basically, and right? okay. Alright. Emm. So. Oh. Hoo. Hu. Hoo, hoo. Heah. Ha. Yu. Nah. Uh-huh. No way. Uh-oh. Jeez. Whoa. Dang. Gosh. Duh. Whoops. Phew. Woo. Ugh. Er. Geez. Oh wow. Oh man. Uh yeah. Uh huh. For real?",
+
+            #"initial_prompt": "ha. heh. Mm, hmm. uh. "
+            #"initial_prompt": "Um, Uh, Ah. Like, you know. I mean, right. Actually. Basically, and right? okay. Alright. Emm. So. Oh. Hoo. 生于忧患,死于安乐。岂不快哉?当然,嗯,呃,就,这样,那个,哪个,啊,呀,哎呀,哎哟,唉哇,啧,唷,哟,噫!微斯人,吾谁与归?ええと、あの、ま、そう、ええ。äh, hm, so, tja, halt, eigentlich. euh, quoi, bah, ben, tu vois, tu sais, t'sais, eh bien, du coup. genre, comme, style. 응,어,그,음.",
+
+            # 아예 initial_prompt 안 넣어 줄 때: ASR이 안 되는 구간이 생기진 않지만 추임새 인식이 잘 안 됨.
+            # 원래 코드의 initial prompt를 넣어 줄 때:  ASR이 안 되는 구간이 생기진 않지만 '원하는' 추임새 인식이 잘 안 됨.
+            # 완전히 다른 initial prompt를 넣어 줄 때 (뒤에 일본어 한자 다 지울 때): ASR이 안 되는 구간이 드문 드문 생김.
+            # 원래 코드의 initial prompt에서 원하는 추임새만 3단어 이하로 수정할 때: 적당히 추가하면 ASR이 안 되는 구간이 생기지 않으면서 원하는 추임새 인식이 잘 됨.
+
+
+            "initial_prompt": "Um. Uh, Ah. Like, you know. I mean, right. Actually. Basically, and right? okay. Alright. Emm. Mm. So. Oh. Hoo hoo.生于忧患,死于安乐。岂不快哉?当然,嗯,呃,就,这样,那个,哪个,啊,呀,哎呀,哎哟,唉哇,啧,唷,哟,噫!微斯人,吾谁与归?ええと、あの、ま、そう、ええ。äh, hm, so, tja, halt, eigentlich. euh, quoi, bah, ben, tu vois, tu sais, t'sais, eh bien, du coup. genre, comme, style. 응,어,그,음.",
+
+        }
+        # Add word_timestamps if flag is enabled
+        if args.whisperx_word_timestamps:
+            asr_options_dict["word_timestamps"] = True
+
         asr_model = whisper_asr.load_asr_model(
             "large-v3",
             device_name,
@@ -1453,37 +1941,24 @@ if __name__ == "__main__":
             language="en", # 언어 지정 한국어.
 
         # whisper_asr.py 의 default_asr_options 수정으로 asr 모델 수정 가능.
-            
-            asr_options={
-                #"log_prob_threshold": -1.0,
-                #"no_speech_threshold": 0.6,
-                # 生于忧患,死于安乐。岂不快哉?当然,嗯,呃,就,这样,那个,哪个,啊,呀,哎呀,哎哟,唉哇,啧,唷,哟,噫!微斯人,吾谁与归?ええと、あの、ま、そう、ええ。äh, hm, so, tja, halt, eigentlich. euh, quoi, bah, ben, tu vois, tu sais, t'sais, eh bien, du coup. genre, comme, style. 응,어,그,음
-                
-                # 원래 코드의 initial prompt
-                # "initial_prompt": "ha. heh. Mm, hmm. Mm hm. uh. Uh huh. Mm huh. Uh. hum Uh. Ah. Uh hu. Like. you know. Yeah. I mean. right. Actually. Basically, and right? okay. Alright. Emm. So. Oh. Hoo. Hu. Hoo, hoo. Heah. Ha. Yu. Nah. Uh-huh. No way. Uh-oh. Jeez. Whoa. Dang. Gosh. Duh. Whoops. Phew. Woo. Ugh. Er. Geez. Oh wow. Oh man. Uh yeah. Uh huh. For real?",
-                
-                #"initial_prompt": "ha. heh. Mm, hmm. uh. "
-                #"initial_prompt": "Um, Uh, Ah. Like, you know. I mean, right. Actually. Basically, and right? okay. Alright. Emm. So. Oh. Hoo. 生于忧患,死于安乐。岂不快哉?当然,嗯,呃,就,这样,那个,哪个,啊,呀,哎呀,哎哟,唉哇,啧,唷,哟,噫!微斯人,吾谁与归?ええと、あの、ま、そう、ええ。äh, hm, so, tja, halt, eigentlich. euh, quoi, bah, ben, tu vois, tu sais, t'sais, eh bien, du coup. genre, comme, style. 응,어,그,음.",
-                
-                # 아예 initial_prompt 안 넣어 줄 때: ASR이 안 되는 구간이 생기진 않지만 추임새 인식이 잘 안 됨.
-                # 원래 코드의 initial prompt를 넣어 줄 때:  ASR이 안 되는 구간이 생기진 않지만 '원하는' 추임새 인식이 잘 안 됨.
-                # 완전히 다른 initial prompt를 넣어 줄 때 (뒤에 일본어 한자 다 지울 때): ASR이 안 되는 구간이 드문 드문 생김.
-                # 원래 코드의 initial prompt에서 원하는 추임새만 3단어 이하로 수정할 때: 적당히 추가하면 ASR이 안 되는 구간이 생기지 않으면서 원하는 추임새 인식이 잘 됨.
-                
-                
-                "initial_prompt": "Um. Uh, Ah. Like, you know. I mean, right. Actually. Basically, and right? okay. Alright. Emm. Mm. So. Oh. Hoo hoo.生于忧患,死于安乐。岂不快哉?当然,嗯,呃,就,这样,那个,哪个,啊,呀,哎呀,哎哟,唉哇,啧,唷,哟,噫!微斯人,吾谁与归?ええと、あの、ま、そう、ええ。äh, hm, so, tja, halt, eigentlich. euh, quoi, bah, ben, tu vois, tu sais, t'sais, eh bien, du coup. genre, comme, style. 응,어,그,음.",
-                
-            },
+
+            asr_options=asr_options_dict,
         )
     else:
+        asr_options_dict = {}
+        # Add word_timestamps if flag is enabled
+        if args.whisperx_word_timestamps:
+            asr_options_dict["word_timestamps"] = True
+
         asr_model = whisper_asr.load_asr_model(
             "large-v3",
             device_name,
             compute_type=args.compute_type,
             threads=args.threads,
-            
-            language="en", 
-            
+
+            language="en",
+            asr_options=asr_options_dict if asr_options_dict else None,
+
             )
     if args.ASRMoE:
         import nemo.collections.asr as nemo_asr
@@ -1547,6 +2022,6 @@ if __name__ == "__main__":
     #         continue  # 폴더가 존재하면 다음 오디오 파일로 넘어갑니다.
 
 
-        main_process(path, do_vad=args.vad, LLM=args.LLM)
+        main_process(path, do_vad=args.vad, LLM=args.LLM, use_demucs=args.demucs)
 end_time = time.time()
 print("Total time:", end_time - start_time)

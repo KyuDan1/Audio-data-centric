@@ -14,8 +14,8 @@ def cut_mp3(input_file, output_file, minutes=2):
         # (파일이 2분보다 짧으면 전체가 선택됩니다)
         cut_audio = audio[:cut_time]
 
-        # 저장하기
-        cut_audio.export(output_file, format="mp3")
+        # 저장하기 (16kHz로 샘플링 레이트 설정)
+        cut_audio.export(output_file, format="mp3", parameters=["-ar", "16000"])
         print(f"성공적으로 저장되었습니다: {output_file}")
 
     except Exception as e:
