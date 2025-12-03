@@ -365,10 +365,49 @@
             font-weight: 600;
         }
 
-        .text-comparison {
+        .details-container {
             margin-top: 15px;
             padding-top: 15px;
             border-top: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* Styles for Qwen-Omni Caption */
+        .caption-box {
+            background: rgba(155, 89, 182, 0.15);
+            border-left: 4px solid #9b59b6;
+            padding: 12px;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .caption-label {
+            font-size: 11px;
+            opacity: 1;
+            text-transform: uppercase;
+            font-weight: 800;
+            margin-bottom: 8px;
+            color: #e0aaff;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .caption-label::before {
+            content: '👁️';
+            font-size: 14px;
+        }
+
+        .caption-content {
+            font-size: 13px;
+            line-height: 1.6;
+            color: #f3e5f5;
+            white-space: pre-wrap;
+        }
+
+        /* Styles for Text Grid */
+        .text-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 12px;
@@ -499,7 +538,7 @@
                     <div class="audio-speaker" id="currentSpeaker"></div>
                     <div class="audio-text" id="currentText"></div>
                 </div>
-                <div class="text-comparison" id="textComparison"></div>
+                <div class="details-container" id="detailsContainer"></div>
             </div>
             <div class="audio-controls">
                 <button class="btn btn-primary" onclick="stopAudio()">⏹ Stop</button>
@@ -557,7 +596,10 @@
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
-                transcriptData = await response.json();
+                const jsonData = await response.json();
+                let segments = jsonData.segments || jsonData;
+                // Add default speaker if not present
+                transcriptData = segments.map(seg => ({...seg, speaker: seg.speaker || 'SPEAKER_00'}));
 
                 document.getElementById('loading').classList.add('hidden');
                 document.getElementById('timeline').classList.remove('hidden');
@@ -702,7 +744,7 @@
             audioElement.src = audioFile;
             audioElement.play().catch(error => {
                 console.error('Error playing audio:', error);
-                alert('Could not play audio file: ' + audioFile);
+                // alert('Could not play audio file: ' + audioFile);
                 if (currentSegmentElement) {
                     currentSegmentElement.classList.remove('playing');
                 }
@@ -714,26 +756,43 @@
             document.getElementById('currentSpeaker').textContent = segment.speaker + (segment.demucs ? ' (DEMUCS Applied)' : ' (No DEMUCS)');
             document.getElementById('currentText').textContent = segment[currentTextSource] || segment.text;
 
-            // Display all text versions
-            const textComparison = document.getElementById('textComparison');
-            textComparison.innerHTML = `
-                <div class="text-version">
-                    <div class="text-version-label">Whisper</div>
-                    <div class="text-version-content">${segment.text_whisper || 'N/A'}</div>
-                </div>
-                <div class="text-version">
-                    <div class="text-version-label">Canary</div>
-                    <div class="text-version-content">${segment.text_canary || 'N/A'}</div>
-                </div>
-                <div class="text-version">
-                    <div class="text-version-label">Parakeet</div>
-                    <div class="text-version-content">${segment.text_parakeet || 'N/A'}</div>
-                </div>
-                <div class="text-version">
-                    <div class="text-version-label">Ensemble</div>
-                    <div class="text-version-content">${segment.text_ensemble || 'N/A'}</div>
+            // Prepare details: Qwen Caption + Text Grid
+            const detailsContainer = document.getElementById('detailsContainer');
+            
+            // Build Caption HTML
+            let captionHtml = '';
+            if (segment.qwen3omni_caption) {
+                captionHtml = `
+                    <div class="caption-box">
+                        <div class="caption-label">Qwen-Omni Caption (Audio Scene Description)</div>
+                        <div class="caption-content">${segment.qwen3omni_caption}</div>
+                    </div>
+                `;
+            }
+
+            // Build Text Grid HTML
+            const textGridHtml = `
+                <div class="text-grid">
+                    <div class="text-version">
+                        <div class="text-version-label">Whisper</div>
+                        <div class="text-version-content">${segment.text_whisper || 'N/A'}</div>
+                    </div>
+                    <div class="text-version">
+                        <div class="text-version-label">Canary</div>
+                        <div class="text-version-content">${segment.text_canary || 'N/A'}</div>
+                    </div>
+                    <div class="text-version">
+                        <div class="text-version-label">Parakeet</div>
+                        <div class="text-version-content">${segment.text_parakeet || 'N/A'}</div>
+                    </div>
+                    <div class="text-version">
+                        <div class="text-version-label">Ensemble</div>
+                        <div class="text-version-content">${segment.text_ensemble || 'N/A'}</div>
+                    </div>
                 </div>
             `;
+
+            detailsContainer.innerHTML = captionHtml + textGridHtml;
 
             audioElement.onended = () => {
                 if (currentSegmentElement) {

@@ -25,7 +25,22 @@ seg_ths=(0.11)
 min_cluster_sizes=(11)
 clust_ths=(0.5)
 #ASRMoE=(--ASRMoE --no-ASRMoE)
-ASRMoE=(--no-ASRMoE)
+ASRMoE=(--ASRMoE)
+# DEMUCS 플래그 조합 (배경음악 제거)
+# --demucs: PANNs로 배경음악 검출 후 Demucs로 보컬 추출
+# --no-demucs: 배경음악 제거 안 함 (기본값)
+demucs_flags=(--demucs)
+#demucs_flags=(--demucs --no-demucs)
+# WhisperX 단어 수준 타임스탬프 플래그
+# --whisperx_word_timestamps: WhisperX 정렬을 통한 단어 수준 타임스탬프 활성화
+# --no-whisperx_word_timestamps: 단어 수준 타임스탬프 비활성화 (기본값)
+whisperx_flags=(--whisperx_word_timestamps)
+#whisperx_flags=(--whisperx_word_timestamps --no-whisperx_word_timestamps)
+# Qwen3-Omni 오디오 캡셔닝 플래그
+# --qwen3omni: Qwen3-Omni API를 통한 오디오 캡션 생성 활성화
+# --no-qwen3omni: 오디오 캡션 생성 비활성화 (기본값)
+qwen3omni_flags=(--qwen3omni)
+#qwen3omni_flags=(--qwen3omni --no-qwen3omni)
 # 추가된 MERGE_GAP 조합
 # merge_gaps=(0.5 1 1.5 2)
 # 0.5와 2가 똑같이 나옴.
@@ -41,15 +56,21 @@ for folder in "${folders[@]}"; do
               for clust in "${clust_ths[@]}"; do
                 for merge_gap in "${merge_gaps[@]}"; do
                   for asrmoe in "${ASRMoE[@]}"; do
-                    echo "▶ Folder: ${folder}, ${vad}, ${dia3}, ${initprompt}, LLM=${llm}, seg_th=${seg}, min_cluster_size=${min_cluster}, clust_th=${clust}, merge_gap=${merge_gap}, ${asrmoe}, korean=${korean}"
-                    python main_original_ASR_MoE.py \
-                      --input_folder_path "${folder}" \
-                      ${vad} ${dia3} ${initprompt} ${asrmoe} \
-                      --LLM "${llm}" \
-                      --seg_th "${seg}" \
-                      --min_cluster_size "${min_cluster}" \
-                      --clust_th "${clust}" \
-                      --merge_gap "${merge_gap}"
+                    for demucs in "${demucs_flags[@]}"; do
+                      for whisperx in "${whisperx_flags[@]}"; do
+                        for qwen3omni in "${qwen3omni_flags[@]}"; do
+                          echo "▶ Folder: ${folder}, ${vad}, ${dia3}, ${initprompt}, LLM=${llm}, seg_th=${seg}, min_cluster_size=${min_cluster}, clust_th=${clust}, merge_gap=${merge_gap}, ${asrmoe}, ${demucs}, ${whisperx}, ${qwen3omni}, korean=${korean}"
+                          python main_original_ASR_MoE.py \
+                            --input_folder_path "${folder}" \
+                            ${vad} ${dia3} ${initprompt} ${asrmoe} ${demucs} ${whisperx} ${qwen3omni} \
+                            --LLM "${llm}" \
+                            --seg_th "${seg}" \
+                            --min_cluster_size "${min_cluster}" \
+                            --clust_th "${clust}" \
+                            --merge_gap "${merge_gap}"
+                        done
+                      done
+                    done
                   done
                 done
               done

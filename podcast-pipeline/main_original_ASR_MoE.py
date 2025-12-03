@@ -791,6 +791,9 @@ def asr_MoE(vad_segments, audio, segment_demucs_flags=None, enable_word_timestam
                 result[idx]["start"] += start_time
                 result[idx]["end"] += start_time
                 result[idx]["language"] = transcribe_result_temp["language"]
+                # Add speaker information from vad_segments
+                if idx < len(vad_segments) and "speaker" in vad_segments[idx]:
+                    result[idx]["speaker"] = vad_segments[idx]["speaker"]
                 # Adjust word timestamps if present
                 if enable_word_timestamps and "words" in result[idx]:
                     for word in result[idx]["words"]:
@@ -880,6 +883,9 @@ def asr_MoE(vad_segments, audio, segment_demucs_flags=None, enable_word_timestam
                 result[idx]["start"] += start_time
                 result[idx]["end"] += start_time
                 result[idx]["language"] = transcribe_result["language"]
+                # Add speaker information from vad_segments
+                if idx < len(vad_segments) and "speaker" in vad_segments[idx]:
+                    result[idx]["speaker"] = vad_segments[idx]["speaker"]
                 # Add demucs flag from preprocessing
                 result[idx]["demucs"] = segment_demucs_flags[idx] if idx < len(segment_demucs_flags) else False
                 # Adjust word timestamps if present
