@@ -1,0 +1,2330 @@
+{
+  "metadata": {
+    "audio_duration_seconds": 120.0,
+    "audio_duration_minutes": 2.0,
+    "vad_sortformer": {
+      "processing_time_seconds": 0.8995394706726074,
+      "rt_factor": 0.007496162255605062
+    },
+    "whisper_large_v3": {
+      "processing_time_seconds": 4.58910870552063,
+      "rt_factor": 0.03824257254600525
+    },
+    "total_segments": 40,
+    "whisperx_alignment": {
+      "processing_time_seconds": 3.4095327854156494,
+      "rt_factor": 0.02841277321179708,
+      "enabled": true
+    },
+    "qwen3omni_caption": {
+      "processing_time_seconds": 142.38618874549866,
+      "rt_factor": 1.1865515728791556,
+      "enabled": true
+    }
+  },
+  "segments": [
+    {
+      "start": 2.8,
+      "end": 5.17,
+      "text": " Hello everyone and welcome to EnglishPod.",
+      "words": [
+        {
+          "word": "Hello",
+          "start": 2.8,
+          "end": 3.1239999999999997,
+          "score": 0.887
+        },
+        {
+          "word": "everyone",
+          "start": 3.246,
+          "end": 3.61,
+          "score": 0.872
+        },
+        {
+          "word": "and",
+          "start": 3.752,
+          "end": 3.854,
+          "score": 0.97
+        },
+        {
+          "word": "welcome",
+          "start": 3.9139999999999997,
+          "end": 4.279,
+          "score": 0.915
+        },
+        {
+          "word": "to",
+          "start": 4.319,
+          "end": 4.401,
+          "score": 0.985
+        },
+        {
+          "word": "EnglishPod.",
+          "start": 4.502,
+          "end": 5.17,
+          "score": 0.899
+        }
+      ],
+      "text_whisper": " Hello everyone and welcome to EnglishPod.",
+      "text_canary": "Hello everyone and welcome to English Podman",
+      "text_parakeet": "Hello everyone and welcome to English Pod Mystery.",
+      "text_ensemble": "Hello everyone and welcome to English Podman Mystery.",
+      "language": "en",
+      "speaker": "SPEAKER_00",
+      "demucs": true,
+      "qwen3omni_caption": "The audio begins with a crisp, high-fidelity recording of a male voice delivering a clear and friendly greeting: “Hello everyone and welcome to English Pod.” The speaker’s accent is General American English, characterized by precise pronunciation and a neutral, welcoming tone. His voice is well-centered in the stereo field, with no perceptible background noise, hiss, or distortion, indicating a professionally treated recording space. The phrase “Hello everyone” is delivered with a natural, energetic inflection, while “and welcome to English Pod” is spoken with a slightly more formal, even cadence. The word “Pod” is pronounced with a short, open “o” sound (/ɑː/), suggesting an intentional pronunciation choice for clarity. The recording ends abruptly and cleanly, without any lingering reverberation or fade, indicating a deliberate and controlled editing process.\n\nThe audio’s characteristics—crispness, clarity, absence of environmental noise, and polished delivery—demonstrate a high-quality, professional production standard. The speaker’s neutral accent and measured speech style are well-suited to an instructional or educational context, with no additional sound effects, music, or ambient cues present. The content is limited to the greeting, and the abrupt ending suggests the clip is an introductory segment or a segment break, intended to signal the start of a new episode or section.\n\nIn summary, this audio clip is a professionally produced, high-quality introduction for an English language learning podcast. It features a clear and welcoming greeting delivered by a native American English speaker, with no background distractions or musical elements. The segment is designed for instructional use, likely serving as an episode opener or transition, and exemplifies the polished production values typical of contemporary educational media."
+    },
+    {
+      "start": 5.191,
+      "end": 5.9399999999999995,
+      "text": "My name is Marco.",
+      "words": [
+        {
+          "word": "My",
+          "start": 5.191,
+          "end": 5.272,
+          "score": 0.83
+        },
+        {
+          "word": "name",
+          "start": 5.311999999999999,
+          "end": 5.433999999999999,
+          "score": 0.147
+        },
+        {
+          "word": "is",
+          "start": 5.454,
+          "end": 5.494999999999999,
+          "score": 0.938
+        },
+        {
+          "word": "Marco.",
+          "start": 5.535,
+          "end": 5.9399999999999995,
+          "score": 0.85
+        }
+      ],
+      "text_whisper": "My name is Marco.",
+      "text_canary": "My name is Marco",
+      "text_parakeet": "My name is Marco.",
+      "text_ensemble": "My name is Marco.",
+      "language": "en",
+      "speaker": "SPEAKER_01",
+      "demucs": false,
+      "qwen3omni_caption": "The audio clip begins abruptly in a quiet, controlled indoor environment, with no preceding background noise or introductory sounds. A single male voice, close to the microphone and centered in the stereo field, speaks clearly and calmly: “My name is Marko.” The delivery is neutral and declarative, with a standard American accent and no regional inflections. The recording is high-fidelity, free of distortion, clipping, static, or any other technical artifacts. The speaker’s voice is well-defined, with a mid-to-low pitch and a natural cadence, and the audio environment is characterized by a faint, consistent electronic hiss and a brief, subtle room reverb that indicates a small, well-treated space, such as a home office or studio. There are no other voices, background noises, music, or environmental sounds present; the setting is acoustically isolated. Immediately after the utterance, the recording ends without any trailing silence or post-speech sounds.\n\nIn summary, this is a brief, high-quality, mono recording of a single male speaker stating his name in a neutral and clear manner. The audio is free of distractions or contextual cues, suggesting a formal, professional, or utilitarian purpose—likely for identification, audio testing, or voice sample collection. The content and style are generic, with no indication of specific intent, emotion, or broader narrative context."
+    },
+    {
+      "start": 5.92,
+      "end": 13.404,
+      "text": " My name is Catherine, and today we've got a very interesting lesson for you all about building your vocabulary.",
+      "words": [
+        {
+          "word": "My",
+          "start": 5.92,
+          "end": 6.321,
+          "score": 0.857
+        },
+        {
+          "word": "name",
+          "start": 6.361,
+          "end": 6.522,
+          "score": 0.853
+        },
+        {
+          "word": "is",
+          "start": 6.582,
+          "end": 6.682,
+          "score": 0.601
+        },
+        {
+          "word": "Catherine,",
+          "start": 6.743,
+          "end": 7.144,
+          "score": 0.933
+        },
+        {
+          "word": "and",
+          "start": 7.465,
+          "end": 7.545,
+          "score": 0.903
+        },
+        {
+          "word": "today",
+          "start": 7.585,
+          "end": 7.806,
+          "score": 0.669
+        },
+        {
+          "word": "we've",
+          "start": 7.866,
+          "end": 8.067,
+          "score": 0.849
+        },
+        {
+          "word": "got",
+          "start": 8.107,
+          "end": 8.267,
+          "score": 0.865
+        },
+        {
+          "word": "a",
+          "start": 8.308,
+          "end": 8.328,
+          "score": 0.951
+        },
+        {
+          "word": "very",
+          "start": 8.428,
+          "end": 8.889,
+          "score": 0.852
+        },
+        {
+          "word": "interesting",
+          "start": 9.712,
+          "end": 10.133,
+          "score": 0.921
+        },
+        {
+          "word": "lesson",
+          "start": 10.234,
+          "end": 10.715,
+          "score": 0.851
+        },
+        {
+          "word": "for",
+          "start": 10.774999999999999,
+          "end": 10.916,
+          "score": 0.843
+        },
+        {
+          "word": "you",
+          "start": 10.956,
+          "end": 11.056000000000001,
+          "score": 0.966
+        },
+        {
+          "word": "all",
+          "start": 11.197,
+          "end": 11.337,
+          "score": 0.914
+        },
+        {
+          "word": "about",
+          "start": 11.396999999999998,
+          "end": 11.678,
+          "score": 0.91
+        },
+        {
+          "word": "building",
+          "start": 11.799,
+          "end": 12.18,
+          "score": 0.718
+        },
+        {
+          "word": "your",
+          "start": 12.219999999999999,
+          "end": 12.401,
+          "score": 0.741
+        },
+        {
+          "word": "vocabulary.",
+          "start": 12.460999999999999,
+          "end": 13.404,
+          "score": 0.83
+        }
+      ],
+      "text_whisper": " My name is Catherine, and today we've got a very interesting lesson for you all about building your vocabulary.",
+      "text_canary": "My name is Catherine and today we've got a very a very interesting lesson for you all about building your vocabulary",
+      "text_parakeet": "My name is Catherine, and today we've got a very interesting lesson for you all about building your vocabulary.",
+      "text_ensemble": "My name is Catherine, and today we've got a very interesting lesson for you all about building your vocabulary. your vocabulary",
+      "language": "en",
+      "speaker": "SPEAKER_00",
+      "demucs": false,
+      "qwen3omni_caption": "The audio begins with a female speaker, identified as Catherine, who addresses her audience in a clear, friendly, and engaging manner. Her voice is warm and inviting, marked by a General American accent and a professional, instructional tone. She opens with, “My name is Catherine, and today we’ve got a very... a very interesting lesson for you all about building your vocabulary.” Her delivery is marked by slight hesitations and a gentle upward inflection, particularly on the word “very,” which adds a sense of anticipation and excitement to her introduction. Throughout her speech, subtle mouth sounds—such as a lip smack and a click—can be heard, further emphasizing the close-mic, high-fidelity recording environment. The audio is pristine, with no background noise, music, or distractions, and is characterized by a subtle, consistent high-frequency hiss and a short, natural reverb, indicating a small, acoustically treated studio or home office setting. The speaker’s voice is centered and intimate, with a smooth frequency range and no technical artifacts, reinforcing the impression of a controlled, professional production.\n\nCatherine’s tone remains consistently upbeat and encouraging, aiming to motivate listeners and foster a sense of direct connection. Her introduction is free of extraneous sounds, audience reactions, or digital effects, focusing entirely on her clear and intelligible speech. The lesson topic—building vocabulary—is stated with enthusiasm, suggesting its relevance for a broad audience interested in language learning, professional development, or self-improvement. The style and delivery are reminiscent of educational podcasts, online courses, or webinars, and her manner is both approachable and authoritative.\n\nIn summary, the clip features Catherine introducing an engaging vocabulary-building lesson in a high-quality, intimate studio setting. Her warm, clear, and motivational delivery, coupled with the absence of distractions, positions the audio as part of a contemporary educational series designed to connect directly with an audience seeking to improve their language skills."
+    },
+    {
+      "start": 13.463999999999999,
+      "end": 16.233,
+      "text": "So we're trying to describe personalities.",
+      "words": [
+        {
+          "word": "So",
+          "start": 13.463999999999999,
+          "end": 13.604,
+          "score": 0.982
+        },
+        {
+          "word": "we're",
+          "start": 13.625,
+          "end": 13.785,
+          "score": 0.837
+        },
+        {
+          "word": "trying",
+          "start": 13.825,
+          "end": 14.146,
+          "score": 0.854
+        },
+        {
+          "word": "to",
+          "start": 14.247,
+          "end": 14.387,
+          "score": 0.897
+        },
+        {
+          "word": "describe",
+          "start": 14.466999999999999,
+          "end": 15.25,
+          "score": 0.843
+        },
+        {
+          "word": "personalities.",
+          "start": 15.43,
+          "end": 16.233,
+          "score": 0.884
+        }
+      ],
+      "text_whisper": "So we're trying to describe personalities.",
+      "text_canary": "So we're trying to describe a personality",
+      "text_parakeet": "So we're trying to describe a personality.",
+      "text_ensemble": "So we're trying to describe a personality",
+      "language": "en",
+      "speaker": "SPEAKER_01",
+      "demucs": false,
+      "qwen3omni_caption": "The audio clip begins in silence, marked only by a faint, steady electronic hiss indicative of a high-quality, close-mic recording setup. No other ambient or environmental sounds are present, and the atmosphere is professionally controlled, with the focus entirely on the speaker. A single female voice, positioned centrally and recorded in a dry, acoustically neutral environment, starts to speak in a clear, articulate, and measured tone. Her delivery is smooth and neutral, with a standard North American accent and a measured pace. There are no signs of emotional inflection, hesitation, or filler words, and her speech is entirely professional, as if addressing an audience in a formal context. The speaker articulates the phrase: \"...so we're trying to describe personalities.\" The voice maintains a consistent volume and timbre, and the recording remains free of distortion, artifacts, or extraneous sounds. The clip concludes abruptly mid-sentence, with no trailing echoes or fade-out, indicating a deliberate, edited cut.\n\nIn summary, this audio excerpt features a professionally recorded, close-mic narration by a female speaker, who begins to introduce the subject of describing personalities in a neutral, formal manner. The recording is clean, focused, and devoid of any background or environmental cues, suggesting a studio or voice-over booth setting. The absence of emotional coloration and the abrupt ending reinforce the impression of a segment intended for educational, informational, or instructional media, with the content and style tailored for a broad, general audience."
+    },
+    {
+      "start": 16.514,
+      "end": 18.5,
+      "text": "You're going to learn tons of new words.",
+      "words": [
+        {
+          "word": "You're",
+          "start": 16.514,
+          "end": 16.634,
+          "score": 0.211
+        },
+        {
+          "word": "going",
+          "start": 16.654,
+          "end": 16.755,
+          "score": 0.233
+        },
+        {
+          "word": "to",
+          "start": 16.775,
+          "end": 16.815,
+          "score": 0.968
+        },
+        {
+          "word": "learn",
+          "start": 16.855,
+          "end": 17.076,
+          "score": 0.755
+        },
+        {
+          "word": "tons",
+          "start": 17.236,
+          "end": 17.738,
+          "score": 0.855
+        },
+        {
+          "word": "of",
+          "start": 17.858,
+          "end": 17.918,
+          "score": 0.974
+        },
+        {
+          "word": "new",
+          "start": 17.998,
+          "end": 18.139,
+          "score": 0.869
+        },
+        {
+          "word": "words.",
+          "start": 18.159,
+          "end": 18.5,
+          "score": 0.863
+        }
+      ],
+      "text_whisper": "You're going to learn tons of new words.",
+      "text_canary": "You're gonna learn tons of new words.",
+      "text_parakeet": "You're going to learn tons of new words.",
+      "text_ensemble": "You're going to learn tons of new words.",
+      "language": "en",
+      "speaker": "SPEAKER_00",
+      "demucs": false,
+      "qwen3omni_caption": "The audio clip begins with a female speaker, whose voice is bright, energetic, and clearly articulated in General American English. She addresses the listener in a lively, engaging manner, saying, \"You're gonna learn tons of new words.\" The phrase \"tons\" is emphasized with a subtle upward inflection, and the final word \"words\" is delivered with a crisp, sharp ending. Throughout the speech, there is no background noise, music, or ambient sound; the recording is exceptionally clean, with only a faint, high-frequency electronic hiss—likely from the recording equipment—present during pauses. The environment is acoustically dry, suggesting a small, well-treated room or professional studio, with the microphone positioned very close to the speaker, resulting in a direct and intimate sound. The vocal timbre is mid-to-high in pitch, bright and resonant, with a slightly nasal quality and no audible breaths, vocal fry, or other non-speech sounds. The speaker’s delivery is marked by a broad, open-mouthed articulation and a consistent, high energy level, creating an enthusiastic and encouraging mood. The phrase is delivered as a complete, declarative statement with no trailing words or pauses after \"words,\" and the recording ends abruptly while the speaker is still speaking, leaving a sense of unresolved anticipation.\n\nIn summary, the audio features a single, enthusiastic female voice promoting vocabulary learning in a pristine, studio-quality setting. The speech is motivational and direct, tailored for a broad audience, and designed to inspire listeners to engage with educational content. The lack of extraneous sounds, the professional vocal delivery, and the abrupt ending reinforce the impression of a modern, commercial, or instructional recording intended to motivate and excite the listener."
+    },
+    {
+      "start": 18.56,
+      "end": 19.383,
+      "text": " Exactly.",
+      "words": [
+        {
+          "word": "Exactly.",
+          "start": 18.56,
+          "end": 19.383,
+          "score": 0.924
+        }
+      ],
+      "text_whisper": " Exactly.",
+      "text_canary": "Exactly",
+      "text_parakeet": "Exactly.",
+      "text_ensemble": "Exactly.",
+      "language": "en",
+      "speaker": "SPEAKER_01",
+      "demucs": true,
+      "qwen3omni_caption": "The audio clip opens with a faint, low-frequency hum that serves as the ambient background, characteristic of a quiet indoor space with minimal external noise. Immediately, a male speaker, positioned close to a microphone in a dry, acoustically treated room, says “Exactly” in a calm, measured, and matter-of-fact tone. His voice is clear and direct, with a slightly raspy timbre and a low pitch, conveying a sense of affirmation and agreement. The delivery is unhurried and confident, with a subtle, brief rise in pitch on “Ex-” and a gentle fall on “-actly,” suggesting a natural conversational cadence. No other voices, music, or environmental sounds are present, and the recording remains free of distortion, static, or extraneous noise.\n\nAfter the speaker’s final syllable, a brief silence ensues, followed by a sharp, synthetic digital click. This click is dry, percussive, and centered, typical of a digital edit marker or the artifact of post-production software, indicating that the audio was likely trimmed or edited at this point. The clip ends abruptly after the click, with no fade-out or lingering sound.\n\nIn summary, the recording features a single male speaker in a modern, studio-like setting who says “Exactly” with calm confidence, followed by a digital edit marker. The audio is high-fidelity, with no background noise or music, and the context suggests an excerpt from a podcast, interview, or voice memo where the speaker is affirming a previously stated point. The clip is concise, direct, and professionally produced, emphasizing clarity and editorial precision."
+    },
+    {
+      "start": 19.604,
+      "end": 24.18,
+      "text": "And as you said, we're going to describe people's personalities, so not their physical attributes.",
+      "words": [
+        {
+          "word": "And",
+          "start": 19.604,
+          "end": 19.684,
+          "score": 0.789
+        },
+        {
+          "word": "as",
+          "start": 19.744,
+          "end": 19.804000000000002,
+          "score": 0.649
+        },
+        {
+          "word": "you",
+          "start": 19.865000000000002,
+          "end": 19.965,
+          "score": 0.985
+        },
+        {
+          "word": "said,",
+          "start": 20.005,
+          "end": 20.166,
+          "score": 0.766
+        },
+        {
+          "word": "we're",
+          "start": 20.186,
+          "end": 20.306,
+          "score": 0.529
+        },
+        {
+          "word": "going",
+          "start": 20.326,
+          "end": 20.447,
+          "score": 0.823
+        },
+        {
+          "word": "to",
+          "start": 20.467000000000002,
+          "end": 20.527,
+          "score": 0.748
+        },
+        {
+          "word": "describe",
+          "start": 20.668,
+          "end": 21.27,
+          "score": 0.788
+        },
+        {
+          "word": "people's",
+          "start": 21.37,
+          "end": 21.731,
+          "score": 0.719
+        },
+        {
+          "word": "personalities,",
+          "start": 21.852,
+          "end": 22.514,
+          "score": 0.719
+        },
+        {
+          "word": "so",
+          "start": 22.534000000000002,
+          "end": 22.595000000000002,
+          "score": 0.947
+        },
+        {
+          "word": "not",
+          "start": 22.635,
+          "end": 22.795,
+          "score": 0.74
+        },
+        {
+          "word": "their",
+          "start": 22.815,
+          "end": 22.976,
+          "score": 0.846
+        },
+        {
+          "word": "physical",
+          "start": 23.116,
+          "end": 23.618000000000002,
+          "score": 0.899
+        },
+        {
+          "word": "attributes.",
+          "start": 23.739,
+          "end": 24.18,
+          "score": 0.818
+        }
+      ],
+      "text_whisper": "And as you said, we're going to describe people's personalities, so not their physical attributes.",
+      "text_canary": "And as you said we're going to describe people's personalities so not their physical attributes",
+      "text_parakeet": "And as you said, we're going to describe people's personalities, so not their physical attributes.",
+      "text_ensemble": "And as you said, we're going to describe people's personalities, so not their physical attributes.",
+      "language": "en",
+      "speaker": "SPEAKER_02",
+      "demucs": false,
+      "qwen3omni_caption": "The audio clip opens mid-sentence with a male speaker, whose calm, measured tone and clear General American accent are immediately evident. He is heard saying, \"...and as you said, we're gonna describe people's personality, so not their physical attributes.\" The phrase \"as you said\" indicates he is responding to a prior statement, suggesting a conversational or instructional setting. The speaker articulates \"describe\" with a slight emphasis and a subtle rise in pitch, indicating intent to clarify the subject matter. His delivery is precise and educational, employing a mid-range pitch and a steady pace, with a brief, controlled inhalation before the final words. The speech is free of filler words or hesitation, maintaining a focused, didactic style. The background is nearly silent, with only a faint electronic hiss and a low-frequency hum perceptible, typical of a quiet, acoustically treated room. There are no additional sounds, music, or environmental cues present. The recording is of moderate fidelity, with a clear signal but some high-frequency roll-off, likely captured using a close microphone setup. The speaker's voice is centered and intimate, with a subtle reverberation consistent with a small studio or home office environment. The content centers on distinguishing personality from physical attributes, implying an educational or conversational context, such as a lesson or podcast, where the speaker is providing clear, accessible explanations. The overall impression is of a professional, focused recording intended for instructional purposes."
+    },
+    {
+      "start": 24.582,
+      "end": 29.7,
+      "text": "We're going to concentrate on how they are personality-wise and stuff like that.",
+      "words": [
+        {
+          "word": "We're",
+          "start": 24.582,
+          "end": 24.702,
+          "score": 0.674
+        },
+        {
+          "word": "going",
+          "start": 24.722,
+          "end": 24.823,
+          "score": 0.398
+        },
+        {
+          "word": "to",
+          "start": 24.843,
+          "end": 24.883,
+          "score": 0.996
+        },
+        {
+          "word": "concentrate",
+          "start": 24.923000000000002,
+          "end": 25.465,
+          "score": 0.789
+        },
+        {
+          "word": "on",
+          "start": 25.505,
+          "end": 25.706,
+          "score": 0.834
+        },
+        {
+          "word": "how",
+          "start": 25.926000000000002,
+          "end": 26.167,
+          "score": 0.802
+        },
+        {
+          "word": "they",
+          "start": 26.248,
+          "end": 26.408,
+          "score": 0.924
+        },
+        {
+          "word": "are",
+          "start": 26.689,
+          "end": 26.830000000000002,
+          "score": 0.67
+        },
+        {
+          "word": "personality-wise",
+          "start": 27.452,
+          "end": 28.556,
+          "score": 0.871
+        },
+        {
+          "word": "and",
+          "start": 28.636,
+          "end": 28.717000000000002,
+          "score": 0.675
+        },
+        {
+          "word": "stuff",
+          "start": 28.917,
+          "end": 29.118000000000002,
+          "score": 0.865
+        },
+        {
+          "word": "like",
+          "start": 29.138,
+          "end": 29.258,
+          "score": 0.75
+        },
+        {
+          "word": "that.",
+          "start": 29.299,
+          "end": 29.7,
+          "score": 0.923
+        }
+      ],
+      "text_whisper": "We're going to concentrate on how they are personality-wise and stuff like that.",
+      "text_canary": "We're gonna concentrate on how they are in personality wise and stuff like that.",
+      "text_parakeet": "We're gonna concentrate on how they are in personality-wise and stuff like that.",
+      "text_ensemble": "We're gonna concentrate on how they are in personality-wise and stuff like that. that.",
+      "language": "en",
+      "speaker": "SPEAKER_00",
+      "demucs": false,
+      "qwen3omni_caption": "The audio clip opens with a faint electronic hiss, a subtle artifact of a non-professional recording setup, immediately establishing a casual, informal atmosphere. A single adult male, speaking with a General American English accent, begins the conversation in a calm and measured tone, using a mid-to-low pitch and a relaxed, conversational cadence. He states, \"We're going to concentrate on how they are in personality-wise and stuff like that.\" The phrase \"personality-wise\" is delivered with a slight emphasis and a mild upward inflection, indicating a focus on the subject at hand. The inclusion of \"and stuff like that\" at the end, spoken in a softer and lower volume, adds a casual, explanatory touch, reinforcing the informal nature of the exchange. The speaker’s pacing is unhurried, with natural pauses and a clear, articulate delivery that suggests a confident and thoughtful approach. As he finishes, the ambient hiss becomes more pronounced, and the recording ends abruptly with a sharp digital cut, leaving the hiss and silence.\n\nThis recording captures a brief, informal moment between two individuals, likely in a relaxed setting such as a home, where the speaker introduces the intent to focus on the personalities of unnamed people. The audio’s moderate fidelity, presence of electronic hiss, and abrupt ending suggest a personal, candid exchange, possibly recorded for informal purposes like a podcast or video. The speaker’s language and tone, along with the absence of other voices or environmental sounds, point to a private, conversational context centered on interpersonal dynamics."
+    },
+    {
+      "start": 29.68,
+      "end": 30.821,
+      "text": " their character.",
+      "words": [
+        {
+          "word": "their",
+          "start": 29.68,
+          "end": 29.784000000000002,
+          "score": 0.2
+        },
+        {
+          "word": "character.",
+          "start": 29.908,
+          "end": 30.821,
+          "score": 0.928
+        }
+      ],
+      "text_whisper": " their character.",
+      "text_canary": "Their character",
+      "text_parakeet": "character.",
+      "text_ensemble": "their character.",
+      "language": "en",
+      "speaker": "SPEAKER_00",
+      "demucs": false,
+      "qwen3omni_caption": "The audio clip begins with a single female voice, positioned centrally and close to the microphone, speaking the word \"character\" with a drawn-out, expressive delivery. Her tone is measured and deliberate, marked by a subtle rise and fall in pitch, particularly on the final syllable, which suggests she is emphasizing or reflecting on the word’s significance. The pronunciation is standard American English, with a clear, crisp articulation, and the delivery is intimate, as if she is sharing a personal thought or making a point to someone present. The recording environment is extremely quiet, with no background noise, reverberation, or environmental cues—only a faint, steady electronic hiss typical of a high-quality microphone. The audio is clean and high-fidelity, with no distortion or artifacts, and the frequency range is focused on mid-tones, giving the voice a warm, present quality.\n\nImmediately after she finishes speaking, the female voice is abruptly replaced by a loud, harsh, and unmodulated electronic buzz. This buzz, centered around 120 Hz, is rich in harmonics and resembles a square or sawtooth wave, creating a grating, synthetic timbre. The buzz is much louder than the preceding speech, with no fade-in or fade-out, and it is so intense that it causes digital clipping and distortion, resulting in a harsh, compressed sound. The buzz continues at full volume with no change in pitch or rhythm until the recording ends, with no further speech, music, or environmental sounds.\n\nThe overall audio is characterized by its stark contrast: the intimate, reflective speech is suddenly and violently interrupted by an aggressive electronic buzz, which dominates the remainder of the clip. The lack of ambient cues and the abrupt transition suggest a deliberate, possibly editorial or technical intervention, such as a censor bleep or signal interruption. The emotional effect is one of abrupt disruption, transforming the calm, thoughtful moment into a jarring, unresolved conclusion.\n\nIn summary, the recording features a single, clear, and expressive spoken word—“character”—delivered by a female speaker in a silent, intimate setting, which is immediately and forcefully replaced by a loud, distorted electronic buzz. The absence of environmental context, music, or additional speech, combined with the abrupt and disruptive editing, implies a purposeful act of censorship, signal interruption, or editorial decision, resulting in a stark emotional and narrative shift from calm reflection to unresolved tension."
+    },
+    {
+      "start": 30.720000000000002,
+      "end": 31.381,
+      "text": " that's right so",
+      "words": [
+        {
+          "word": "that's",
+          "start": 30.720000000000002,
+          "end": 30.997,
+          "score": 0.539
+        },
+        {
+          "word": "right",
+          "start": 31.061,
+          "end": 31.317,
+          "score": 0.295
+        },
+        {
+          "word": "so",
+          "start": 31.339000000000002,
+          "end": 31.381,
+          "score": 0.404
+        }
+      ],
+      "text_whisper": " that's right so",
+      "text_canary": "That's right",
+      "text_parakeet": "That's right.",
+      "text_ensemble": "That's right so",
+      "language": "en",
+      "speaker": "SPEAKER_02",
+      "demucs": false,
+      "qwen3omni_caption": "The audio begins in complete silence, with no ambient sounds, background noise, or environmental cues present. Immediately, a clear male voice with a General American accent enters, speaking the phrase, \"That's right.\" The delivery is neutral, measured, and slightly subdued, indicating a calm, professional tone. The voice is positioned slightly left of center in the stereo field and exhibits a dry, close-miked quality with no reverberation, suggesting the use of a high-quality condenser microphone in a controlled studio or sound booth setting. The phrase is articulated with precision: the word \"That's\" is pronounced with a glottal stop, \"right\" is crisp and falls on a lower pitch, and the voice carries a gentle, downward inflection. No vocal fry or hesitation is present, and the pace is unhurried. The voice is accompanied by a faint, low-level broadband hiss, likely from the recording equipment, but there are no other technical imperfections such as distortion or clipping. The phrase \"That's right\" is a standard, affirming statement commonly used to acknowledge or confirm a previous statement.\n\nFollowing this, the audio transitions abruptly to a brief, synthesized musical sting. This musical cue is a single, sustained, low-frequency note, played with a synthetic, bell-like timbre reminiscent of a digital organ or a chiptune synthesizer. The note is bright, clear, and slightly metallic, with a smooth attack and a short decay. The sound is centrally panned in the stereo field and is presented at a higher volume than the preceding voice, creating a pronounced contrast. The musical sting is clean and free of distortion or artifacts, and its synthetic character is indicative of digital production techniques typical of modern broadcast, podcasting, or video editing. The note ends abruptly, without any lingering reverberation or fade-out, marking a definitive conclusion to the audio segment.\n\nThe audio clip features a single, professionally recorded, neutral male voice affirming \"That's right,\" immediately followed by a short, synthesized musical sting. There is no background noise, environmental context, or extraneous sounds, and the production quality is high, with a clear focus on the message and a purposeful transition to the musical cue. The content and style are consistent with contemporary digital media, such as podcasts, interviews, or video segments, where the affirmation and musical sting serve as editorial signals to denote agreement or the end of a statement."
+    },
+    {
+      "start": 31.12,
+      "end": 37.779999999999994,
+      "text": " So let's take a listen to today's dialogue for the first time, and we'll be back in a moment to talk about some of these great words.",
+      "words": [
+        {
+          "word": "So",
+          "start": 31.12,
+          "end": 31.361,
+          "score": 0.742
+        },
+        {
+          "word": "let's",
+          "start": 31.563000000000002,
+          "end": 31.764,
+          "score": 0.743
+        },
+        {
+          "word": "take",
+          "start": 31.844,
+          "end": 32.004999999999995,
+          "score": 0.878
+        },
+        {
+          "word": "a",
+          "start": 32.046,
+          "end": 32.065999999999995,
+          "score": 0.666
+        },
+        {
+          "word": "listen",
+          "start": 32.126,
+          "end": 32.368,
+          "score": 0.88
+        },
+        {
+          "word": "to",
+          "start": 32.408,
+          "end": 32.488,
+          "score": 0.82
+        },
+        {
+          "word": "today's",
+          "start": 32.549,
+          "end": 32.85,
+          "score": 0.912
+        },
+        {
+          "word": "dialogue",
+          "start": 32.891,
+          "end": 33.253,
+          "score": 0.892
+        },
+        {
+          "word": "for",
+          "start": 33.293,
+          "end": 33.353,
+          "score": 0.998
+        },
+        {
+          "word": "the",
+          "start": 33.394,
+          "end": 33.454,
+          "score": 0.973
+        },
+        {
+          "word": "first",
+          "start": 33.494,
+          "end": 33.696,
+          "score": 0.828
+        },
+        {
+          "word": "time,",
+          "start": 33.756,
+          "end": 33.977,
+          "score": 0.986
+        },
+        {
+          "word": "and",
+          "start": 34.4,
+          "end": 34.46,
+          "score": 0.996
+        },
+        {
+          "word": "we'll",
+          "start": 34.5,
+          "end": 34.641,
+          "score": 0.576
+        },
+        {
+          "word": "be",
+          "start": 34.681,
+          "end": 34.722,
+          "score": 0.544
+        },
+        {
+          "word": "back",
+          "start": 34.821999999999996,
+          "end": 35.104,
+          "score": 0.976
+        },
+        {
+          "word": "in",
+          "start": 35.265,
+          "end": 35.324999999999996,
+          "score": 0.998
+        },
+        {
+          "word": "a",
+          "start": 35.366,
+          "end": 35.406,
+          "score": 0.497
+        },
+        {
+          "word": "moment",
+          "start": 35.506,
+          "end": 35.909,
+          "score": 0.884
+        },
+        {
+          "word": "to",
+          "start": 35.928999999999995,
+          "end": 35.968999999999994,
+          "score": 0.5
+        },
+        {
+          "word": "talk",
+          "start": 36.05,
+          "end": 36.330999999999996,
+          "score": 0.863
+        },
+        {
+          "word": "about",
+          "start": 36.391999999999996,
+          "end": 36.553,
+          "score": 0.882
+        },
+        {
+          "word": "some",
+          "start": 36.592999999999996,
+          "end": 36.714,
+          "score": 0.917
+        },
+        {
+          "word": "of",
+          "start": 36.773999999999994,
+          "end": 36.814,
+          "score": 1.0
+        },
+        {
+          "word": "these",
+          "start": 36.855,
+          "end": 36.995,
+          "score": 0.9
+        },
+        {
+          "word": "great",
+          "start": 37.016,
+          "end": 37.257,
+          "score": 0.787
+        },
+        {
+          "word": "words.",
+          "start": 37.297,
+          "end": 37.779999999999994,
+          "score": 0.9
+        }
+      ],
+      "text_whisper": " So let's take a listen to today's dialogue for the first time, and we'll be back in a moment to talk about some of these great words.",
+      "text_canary": "So let's take a listen to today's dialogue for the first time and we'll be back in a moment to talk about some of these great words.",
+      "text_parakeet": "So let's take a listen to today's dialogue for the first time, and we'll be back in a moment to talk about some of these great words.",
+      "text_ensemble": "So let's take a listen to today's dialogue for the first time, and we'll be back in a moment to talk about some of these great words.",
+      "language": "en",
+      "speaker": "SPEAKER_00",
+      "demucs": false,
+      "qwen3omni_caption": "The audio begins with a brief, low-frequency thump, indicative of a microphone or recording device being activated, immediately followed by a faint, high-frequency click. A faint, persistent electronic hiss underlies the recording, suggesting it was captured in a controlled environment with professional equipment. The primary speaker, a woman with a clear, medium-to-high-pitched voice and a General American accent, addresses the listener in a friendly and engaging manner: “So, let’s take a listen to today’s dialogue for the first time, and we’ll be back in a moment to talk about some of these great words.” Her delivery is smooth, rhythmic, and carefully articulated, with a professional cadence and a subtle, welcoming smile in her tone. She uses “we” to foster a sense of shared experience, and the phrase “these great words” is spoken with gentle emphasis, highlighting the educational intent of the program.\n\nAfter her statement, a short pause follows, during which only the electronic hiss is audible. Then, a distinct, low-frequency click is heard, likely from a mouse or keyboard, immediately succeeded by a short, synthesized musical jingle. The jingle consists of three ascending notes—G, B, D—played on a digital instrument resembling a marimba or xylophone, with a clean, bell-like timbre and a steady rhythm. The jingle serves as a transitional element, signaling the transition to the upcoming dialogue segment, and is abruptly cut off before completion, indicating the audio clip is an excerpt.\n\nThroughout, the recording is free of distortion, with no extraneous noises or background sounds apart from the technical cues. The sound quality is crisp and clean, with a dry, studio-like acoustic profile and no room reverberation. The voice is centered and close-mic’d, while the jingle is mixed to the right, creating a balanced stereo image. The moderate dynamic range ensures the speaker remains prominent, and the musical jingle is slightly softer, supporting but not overpowering the narration.\n\nThe spoken content is clearly articulated and free of regionalisms or slang, reinforcing the speaker’s professional, American English background. The jingle’s melody is simple and unobtrusive, designed to signal a segment transition without distracting from the main content. The absence of other voices, audience sounds, or environmental noise points to a controlled studio setting. The speaker’s reference to “today’s dialogue” and “these great words” situates the clip within a language-learning context, most likely as part of an instructional program aimed at English language learners. The use of inclusive language and the jingle’s transitional function further indicate a structured, educational format.\n\nIn summary, the audio clip presents a professionally produced segment from an American English language-learning program. A female host delivers an introductory statement inviting listeners to engage with the day’s dialogue and promising a follow-up discussion of key vocabulary. The segment is marked by technical clarity, an unobtrusive musical jingle, and a polished, welcoming tone, all characteristic of an educational broadcast designed to facilitate language acquisition in a studio setting."
+    },
+    {
+      "start": 44.32,
+      "end": 44.4,
+      "text": " Okay.",
+      "words": [],
+      "chars": null,
+      "text_whisper": " Okay.",
+      "text_canary": "Transcript",
+      "text_parakeet": "",
+      "text_ensemble": "Okay.",
+      "language": "en",
+      "speaker": "SPEAKER_02",
+      "demucs": false,
+      "qwen3omni_caption": "The audio clip begins with a sudden, loud, and clear digital buzzer that dominates the soundscape. This buzzer is characterized by a harsh, synthetic timbre, resembling a sawtooth or square wave, and is centered in the stereo field, lacking any spatial depth or reverberation. Its volume is consistently high, and it is immediately present at the start of the recording. The buzzer remains uninterrupted and unchanging throughout its duration, with no background noise, speech, music, or environmental sounds detectable at any point. The sound is abruptly terminated mid-burst, cutting off without a fade or decay, which suggests a hard digital edit or the termination of a recording session.\n\nTechnically, the buzzer is captured at high fidelity, with no distortion, clipping, or compression artifacts, and is presented in mono or centered stereo. Its frequency content is concentrated in the midrange, producing a sharp and attention-grabbing effect. The loudness is sufficient to startle or demand attention, and the sound is perceived as urgent and intrusive. The buzzer's synthetic nature and lack of spatial cues suggest it was generated by a digital device such as a game show timer, quiz system, or alarm, rather than an acoustic or environmental source.\n\nSemantically, the buzzer functions as a universal signal for error, failure, or time expiration, commonly found in game shows, quizzes, or digital alerts. It is contextually neutral, devoid of speech or music, and intended to convey immediate negative feedback or alert. Culturally, the sound is instantly recognizable in Western media and digital environments, evoking associations with game shows and quiz programs where it signals incorrect answers or time limits. Its use is widespread and generic, with no specific branding, language, or musical style.\n\nIn summary, the audio consists solely of a single, unmodulated, synthetic buzzer that is loud, harsh, and attention-grabbing, beginning and ending abruptly with no other sounds present. It serves as a universal indicator of failure or time expiration, rooted in Western media and digital culture, and is presented in a technically pristine, contextually neutral format."
+    },
+    {
+      "start": 44.4,
+      "end": 45.861,
+      "text": " Okay class, settle down.",
+      "words": [
+        {
+          "word": "Okay",
+          "start": 44.4,
+          "end": 44.647,
+          "score": 0.466
+        },
+        {
+          "word": "class,",
+          "start": 44.687999999999995,
+          "end": 44.955,
+          "score": 0.945
+        },
+        {
+          "word": "settle",
+          "start": 44.976,
+          "end": 45.223,
+          "score": 0.753
+        },
+        {
+          "word": "down.",
+          "start": 45.263999999999996,
+          "end": 45.861,
+          "score": 0.792
+        }
+      ],
+      "text_whisper": " Okay class, settle down.",
+      "text_canary": "K class settle down",
+      "text_parakeet": "K class settle down.",
+      "text_ensemble": "K class settle down.",
+      "language": "en",
+      "speaker": "SPEAKER_02",
+      "demucs": false,
+      "qwen3omni_caption": "The audio clip begins with a clear, direct male voice, slightly reverberant, stating, “Okay, class, settle down.” This phrase is delivered in a calm, neutral tone with a General American accent, projecting authority and control typical of a classroom environment. The speaker’s words are slightly truncated at the end, indicating the recording cuts off mid-syllable. Throughout the utterance, the background features a continuous, low-frequency hum, likely emanating from an HVAC system or fluorescent lighting, and a faint broadband hiss that forms the noise floor. There are no other audible sounds—no shuffling, footsteps, or incidental noises—suggesting a quiet, attentive classroom. The acoustic environment is characterized by mild reverberation, implying a medium-sized room with hard surfaces. The overall fidelity is moderate; while the speaker’s voice is intelligible, the presence of background hum and hiss slightly obscures the sound, and the frequency range is centered on midrange frequencies. The speaker’s manner and the setting strongly imply a school or university context, with the phrase functioning as a standard directive to regain student focus at the start of a session. The recording ends abruptly with the cut-off of the final syllable, with no further sound or closure.\n\nIn summary, this audio clip captures a brief, authoritative moment in a North American classroom as a male instructor, likely a teacher or professor, commands the class to settle down. The setting is marked by a low-level ambient hum and hiss, with no other environmental sounds, and the audio is of moderate fidelity, cut short without any fade or closing remarks."
+    },
+    {
+      "start": 45.919999999999995,
+      "end": 48.955,
+      "text": " I have the results of your individual personality tests.",
+      "words": [
+        {
+          "word": "I",
+          "start": 45.919999999999995,
+          "end": 46.181,
+          "score": 0.87
+        },
+        {
+          "word": "have",
+          "start": 46.221999999999994,
+          "end": 46.361999999999995,
+          "score": 0.759
+        },
+        {
+          "word": "the",
+          "start": 46.401999999999994,
+          "end": 46.462999999999994,
+          "score": 0.991
+        },
+        {
+          "word": "results",
+          "start": 46.503,
+          "end": 46.845,
+          "score": 0.882
+        },
+        {
+          "word": "of",
+          "start": 46.904999999999994,
+          "end": 46.945,
+          "score": 1.0
+        },
+        {
+          "word": "your",
+          "start": 46.985,
+          "end": 47.105999999999995,
+          "score": 0.985
+        },
+        {
+          "word": "individual",
+          "start": 47.266999999999996,
+          "end": 47.809999999999995,
+          "score": 0.902
+        },
+        {
+          "word": "personality",
+          "start": 47.87,
+          "end": 48.532999999999994,
+          "score": 0.827
+        },
+        {
+          "word": "tests.",
+          "start": 48.593999999999994,
+          "end": 48.955,
+          "score": 0.887
+        }
+      ],
+      "text_whisper": " I have the results of your individual personality tests.",
+      "text_canary": "I have the results of your individual personality tests",
+      "text_parakeet": "I have the results of your individual personality tests.",
+      "text_ensemble": "I have the results of your individual personality tests.",
+      "language": "en",
+      "speaker": "SPEAKER_00",
+      "demucs": false,
+      "qwen3omni_caption": "The audio clip opens in a small, acoustically treated room, where a single male voice, speaking in clear General American English with a neutral, calm, and professional tone, is heard. The speaker’s voice is close-miked, with moderate pitch and natural, measured cadence, indicating the use of a studio-quality microphone. The environment is acoustically isolated, as evidenced by the absence of background noise, echo, or environmental sounds. The speaker says, “I have the results of your individual personality test.” This phrase is delivered with precise enunciation and even pacing, and the final word, “test,” is slightly clipped, suggesting a minor edit or abrupt ending. After the sentence, a brief silence occurs, during which a faint, low-frequency electronic hum becomes momentarily audible, likely a byproduct of the recording equipment. Throughout the recording, there is a consistent, low-level broadband hiss, characteristic of consumer-grade preamplifier noise, and a subtle compression effect that maintains vocal volume and reduces dynamic range. No other sounds, such as clicks, rustling, or breathing, are present, emphasizing the controlled nature of the recording. The speaker’s accent, word choice, and delivery style are consistent with professional media environments, such as television, radio, or digital content. The content and presentation suggest the speaker is an authority figure—such as a therapist, counselor, or media host—addressing a client or audience in a formal, impersonal manner. The phrase “individual personality test” implies the context of psychological assessment, but the clip provides no further details about the test or the recipient. The absence of ambient sounds and the technical characteristics of the recording indicate a deliberate, controlled studio setting, and the abrupt ending reinforces the impression of a professionally edited segment.\n\nIn summary, this audio clip features a professionally delivered, isolated statement by a male speaker in a studio environment, announcing the availability of individual personality test results. The recording is technically clean but includes minor hiss and electronic hum, with no extraneous sounds or contextual details provided. The content, tone, and production style point to a formal, media-oriented or therapeutic setting, intended for an individual or audience receiving psychological feedback."
+    },
+    {
+      "start": 49.297,
+      "end": 53.86,
+      "text": "I'm going to hand them out and if you'd like, you can read them out loud to the rest of the class.",
+      "words": [
+        {
+          "word": "I'm",
+          "start": 49.297,
+          "end": 49.437999999999995,
+          "score": 0.831
+        },
+        {
+          "word": "going",
+          "start": 49.477999999999994,
+          "end": 49.678999999999995,
+          "score": 0.797
+        },
+        {
+          "word": "to",
+          "start": 49.718999999999994,
+          "end": 49.82,
+          "score": 0.768
+        },
+        {
+          "word": "hand",
+          "start": 49.879999999999995,
+          "end": 50.101,
+          "score": 0.915
+        },
+        {
+          "word": "them",
+          "start": 50.141,
+          "end": 50.302,
+          "score": 0.678
+        },
+        {
+          "word": "out",
+          "start": 50.503,
+          "end": 50.623999999999995,
+          "score": 0.82
+        },
+        {
+          "word": "and",
+          "start": 50.845,
+          "end": 50.945,
+          "score": 0.978
+        },
+        {
+          "word": "if",
+          "start": 51.006,
+          "end": 51.065999999999995,
+          "score": 0.996
+        },
+        {
+          "word": "you'd",
+          "start": 51.105999999999995,
+          "end": 51.287,
+          "score": 0.456
+        },
+        {
+          "word": "like,",
+          "start": 51.306999999999995,
+          "end": 51.547999999999995,
+          "score": 0.944
+        },
+        {
+          "word": "you",
+          "start": 51.93,
+          "end": 52.010999999999996,
+          "score": 0.908
+        },
+        {
+          "word": "can",
+          "start": 52.050999999999995,
+          "end": 52.150999999999996,
+          "score": 0.978
+        },
+        {
+          "word": "read",
+          "start": 52.192,
+          "end": 52.312,
+          "score": 0.75
+        },
+        {
+          "word": "them",
+          "start": 52.352,
+          "end": 52.433,
+          "score": 0.965
+        },
+        {
+          "word": "out",
+          "start": 52.513,
+          "end": 52.614,
+          "score": 0.819
+        },
+        {
+          "word": "loud",
+          "start": 52.674,
+          "end": 52.855,
+          "score": 0.837
+        },
+        {
+          "word": "to",
+          "start": 52.875,
+          "end": 52.955999999999996,
+          "score": 0.695
+        },
+        {
+          "word": "the",
+          "start": 52.976,
+          "end": 53.056,
+          "score": 0.833
+        },
+        {
+          "word": "rest",
+          "start": 53.076,
+          "end": 53.217,
+          "score": 0.608
+        },
+        {
+          "word": "of",
+          "start": 53.257,
+          "end": 53.297,
+          "score": 0.999
+        },
+        {
+          "word": "the",
+          "start": 53.317,
+          "end": 53.378,
+          "score": 0.845
+        },
+        {
+          "word": "class.",
+          "start": 53.418,
+          "end": 53.86,
+          "score": 0.925
+        }
+      ],
+      "text_whisper": "I'm going to hand them out and if you'd like, you can read them out loud to the rest of the class.",
+      "text_canary": "I'm going to hand them out and if you'd like you can read them out loud to the rest of the class.",
+      "text_parakeet": "I am going to hand them out and if you'd like, you can read them out loud to the rest of the class.",
+      "text_ensemble": "I'm going to hand them out and if you'd like, you can read them out loud to the rest of the class. class.",
+      "language": "en",
+      "speaker": "SPEAKER_02",
+      "demucs": false,
+      "qwen3omni_caption": "The audio clip opens abruptly in a large, echo-filled room, likely a classroom, with a faint electronic hiss and a low-frequency hum characteristic of HVAC or electrical equipment. A male speaker, positioned close to the microphone, begins in a calm, clear, and encouraging tone: “I’m going to hand them out and if you’d like, you can read them out loud to the rest of the class.” His voice is marked by a General American accent, with precise articulation and no regional inflections. As he speaks, the room’s reverberation is pronounced, and a sharp, high-frequency click is heard, possibly from a mechanical device or a student’s movement. The speaker’s delivery is steady, with a slight rise in pitch on “like” to signal encouragement. Following his statement, a brief rustling sound occurs, likely from paper being handled, consistent with the action of distributing materials. After the final word “class,” the speaker’s voice is abruptly cut off mid-syllable, leaving the room’s ambient sounds—reverberation, hiss, and hum—to persist alone until the clip ends. Throughout, the recording quality remains high, with no distortion, clipping, or static, and the speaker’s voice is consistently clear and intelligible. The setting, vocabulary, and tone strongly suggest a formal educational context, with the speaker acting as a teacher or instructor and the audience comprising students. The environment’s acoustic signature, lack of extraneous noise, and absence of other voices reinforce the impression of a controlled classroom setting.\n\nIn summary, this audio segment captures a moment in a formal classroom where a teacher, speaking with clarity and encouragement, instructs students to distribute and read materials aloud. The scene is defined by its reverberant acoustics, subtle background noises, and a sudden termination of speech, all contributing to an authentic snapshot of an educational environment."
+    },
+    {
+      "start": 54.08,
+      "end": 54.980999999999995,
+      "text": " I'll read mine",
+      "words": [
+        {
+          "word": "I'll",
+          "start": 54.08,
+          "end": 54.29,
+          "score": 0.621
+        },
+        {
+          "word": "read",
+          "start": 54.309999999999995,
+          "end": 54.456999999999994,
+          "score": 0.635
+        },
+        {
+          "word": "mine",
+          "start": 54.498999999999995,
+          "end": 54.980999999999995,
+          "score": 0.819
+        }
+      ],
+      "text_whisper": " I'll read mine",
+      "text_canary": "I'll read mine",
+      "text_parakeet": "I'll read mine.",
+      "text_ensemble": "I'll read mine",
+      "language": "en",
+      "speaker": "SPEAKER_00",
+      "demucs": false,
+      "qwen3omni_caption": "The audio clip opens abruptly with a single male voice, which is clear, energetic, and slightly high-pitched, indicating a young adult or middle-aged speaker. He begins with a confident, declarative statement: “I’ll read mine.” His delivery is brisk and assertive, with a rising inflection on “mine” that suggests a playful challenge or competitive spirit. There is no evidence of other voices, background sounds, or environmental cues—only a faint, consistent electronic hiss and a subtle low-frequency hum, indicative of a consumer-grade recording device in a quiet, acoustically treated space such as a home office or studio. The room’s short reverberation and lack of ambient noise suggest the speaker is positioned close to the microphone, with no distractions present.\n\nImmediately following the phrase, the speaker’s tone shifts to one of exaggerated enthusiasm. He exclaims, “Woooo!” in a loud, high-pitched, and slightly theatrical manner, reminiscent of a celebratory cheer or a playful taunt. This vocalization is delivered with a clear upward inflection and a brief, natural reverberation, reinforcing the sense of a controlled, acoustically treated environment. The emotional tone here is not one of genuine joy but rather of mock excitement, as if the speaker is playfully asserting his turn or readiness in a game-like context.\n\nThe recording ends abruptly after the cheer, with no fade-out or trailing sounds, implying either a deliberate edit or an intentional cut-off. Throughout the clip, the speaker’s voice remains dominant, with no other participants or environmental sounds present.\n\nIn summary, the audio features a solo male speaker delivering a confident, competitive statement followed by a playful cheer, set in a quiet, professional recording environment. The content, tone, and structure suggest a competitive or game-like scenario, likely involving a turn-based reading or performance activity, with the speaker’s exaggerated enthusiasm serving to heighten the playful, competitive atmosphere. The technical characteristics and delivery style imply a context such as a podcast, audio game, or social media performance, emphasizing engagement and entertainment."
+    },
+    {
+      "start": 55.36,
+      "end": 56.260999999999996,
+      "text": " Okay, go ahead.",
+      "words": [
+        {
+          "word": "Okay,",
+          "start": 55.36,
+          "end": 55.736999999999995,
+          "score": 0.317
+        },
+        {
+          "word": "go",
+          "start": 55.757999999999996,
+          "end": 55.925999999999995,
+          "score": 0.82
+        },
+        {
+          "word": "ahead.",
+          "start": 56.135,
+          "end": 56.260999999999996,
+          "score": 0.167
+        }
+      ],
+      "text_whisper": " Okay, go ahead.",
+      "text_canary": "Okay go ahead",
+      "text_parakeet": "Okay, go ahead.",
+      "text_ensemble": "Okay, go ahead.",
+      "language": "en",
+      "speaker": "SPEAKER_03",
+      "demucs": false,
+      "qwen3omni_caption": "The audio clip begins abruptly with a faint, low-frequency electronic hum, likely emanating from the recording device or nearby equipment. This hum is constant and unchanging, serving as the only background sound throughout the recording. Over this, a male voice—close to the microphone and slightly left of center in the stereo field—delivers the phrase, “Okay, go ahead.” His tone is calm, measured, and neutral, with a clear, standard American accent and no regional inflections. The speech is marked by a slight upward inflection on “Okay” and a subtle emphasis on “go,” suggesting a polite and encouraging prompt to another individual. The delivery is efficient and professional, with a gentle, open quality. Immediately after the speech, a soft, brief mouth click is audible, followed by a faint rustling sound, possibly from the speaker shifting or handling a small object. The recording ends abruptly, with no fade-out or residual noise.\n\nThe recording is of moderate fidelity, captured with a consumer-grade microphone in a small, acoustically treated room, as indicated by the dry sound and lack of reverberation. The voice is clear and intelligible, but the background hum and minor artifacts suggest a non-professional setting. The clip contains no other voices or ambient noises, indicating a controlled environment typical of a podcast studio, voiceover booth, or similar professional space. The interaction is brief and functional, serving as an introductory cue for another speaker, with no further context provided within the clip itself.\n\nIn summary, this audio excerpt features a single male speaker issuing a neutral, professional prompt in a controlled, acoustically treated environment, accompanied only by a low-level hum and minor mouth and movement sounds. The recording is concise, efficient, and indicative of a structured, collaborative process, such as a podcast or interview, but contains no further narrative or background elements."
+    },
+    {
+      "start": 56.64,
+      "end": 60.3,
+      "text": " It says here that I am adventurous, outgoing, and easygoing.",
+      "words": [
+        {
+          "word": "It",
+          "start": 56.64,
+          "end": 56.821,
+          "score": 0.922
+        },
+        {
+          "word": "says",
+          "start": 56.881,
+          "end": 57.102,
+          "score": 0.916
+        },
+        {
+          "word": "here",
+          "start": 57.163,
+          "end": 57.364,
+          "score": 0.794
+        },
+        {
+          "word": "that",
+          "start": 57.443999999999996,
+          "end": 57.565,
+          "score": 0.99
+        },
+        {
+          "word": "I",
+          "start": 57.666,
+          "end": 57.726,
+          "score": 0.976
+        },
+        {
+          "word": "am",
+          "start": 57.806,
+          "end": 57.867,
+          "score": 0.998
+        },
+        {
+          "word": "adventurous,",
+          "start": 57.946999999999996,
+          "end": 58.631,
+          "score": 0.911
+        },
+        {
+          "word": "outgoing,",
+          "start": 59.092999999999996,
+          "end": 59.535999999999994,
+          "score": 0.969
+        },
+        {
+          "word": "and",
+          "start": 59.616,
+          "end": 59.675999999999995,
+          "score": 0.683
+        },
+        {
+          "word": "easygoing.",
+          "start": 59.717,
+          "end": 60.3,
+          "score": 0.876
+        }
+      ],
+      "text_whisper": " It says here that I am adventurous, outgoing, and easygoing.",
+      "text_canary": "It says here that I am adventurous, outgoing, and easygoing.",
+      "text_parakeet": "It says here that I am adventurous, outgoing, and easy going.",
+      "text_ensemble": "It says here that I am adventurous, outgoing, and easygoing. going.",
+      "language": "en",
+      "speaker": "SPEAKER_02",
+      "demucs": false,
+      "qwen3omni_caption": "The audio begins with a clear, close-miked male voice, whose speech is set against a faint, steady electronic hiss and a subtle low-frequency hum—typical of a quiet, untreated recording environment. The speaker, who sounds like a young adult male with a General American accent, addresses an unseen audience with a slightly elevated pitch and a tone of mild surprise and amusement, as if reacting to something he has just read. His delivery is deliberate, with a brief pause after \"here,\" and the words \"adventurous,\" \"outgoing,\" and \"easygoing\" are articulated with distinct emphasis and a rising intonation, conveying a sense of personal discovery and playful self-reflection. The overall pacing is unhurried and natural, with no signs of performance or artificiality. After he finishes, a brief pause occurs, allowing the electronic hiss and hum to become momentarily more prominent, before the recording abruptly ends with a sharp digital click, indicating manual termination of the session.\n\nThe audio quality is high, free from distortion or artifacts, with a frequency range focused on mid-tones and clear vocal details. The room’s acoustics suggest a small, untreated space, likely a home office or bedroom. The speaker’s mannerisms, including his informal phrasing and self-referential delivery, imply he is sharing the results of a personality test or feedback for a personal project, rather than reading for an audience. The content and style indicate a contemporary, informal context, with no evidence of humor, irony, or external cues to suggest parody. The recording is a direct, unembellished capture of a private moment in which a young American male reacts to and shares positive personality feedback, reflecting a modern, self-aware approach to personal expression."
+    },
+    {
+      "start": 60.520999999999994,
+      "end": 64.1,
+      "text": "It says that I'm a little superstitious and occasionally naive.",
+      "words": [
+        {
+          "word": "It",
+          "start": 60.520999999999994,
+          "end": 60.580999999999996,
+          "score": 0.69
+        },
+        {
+          "word": "says",
+          "start": 60.641999999999996,
+          "end": 60.802,
+          "score": 0.971
+        },
+        {
+          "word": "that",
+          "start": 60.863,
+          "end": 60.962999999999994,
+          "score": 0.911
+        },
+        {
+          "word": "I'm",
+          "start": 61.003,
+          "end": 61.123999999999995,
+          "score": 0.812
+        },
+        {
+          "word": "a",
+          "start": 61.163999999999994,
+          "end": 61.184,
+          "score": 0.983
+        },
+        {
+          "word": "little",
+          "start": 61.224999999999994,
+          "end": 61.446,
+          "score": 0.8
+        },
+        {
+          "word": "superstitious",
+          "start": 61.506,
+          "end": 62.23,
+          "score": 0.778
+        },
+        {
+          "word": "and",
+          "start": 62.431,
+          "end": 62.532,
+          "score": 0.825
+        },
+        {
+          "word": "occasionally",
+          "start": 62.592,
+          "end": 63.195,
+          "score": 0.861
+        },
+        {
+          "word": "naive.",
+          "start": 63.235,
+          "end": 64.1,
+          "score": 0.696
+        }
+      ],
+      "text_whisper": "It says that I'm a little superstitious and occasionally naive.",
+      "text_canary": "It says that I'm a little superstitious and occasionally naive.",
+      "text_parakeet": "It says that I'm a little superstitious and occasionally naïve.",
+      "text_ensemble": "It says that I'm a little superstitious and occasionally naive.",
+      "language": "en",
+      "speaker": "SPEAKER_00",
+      "demucs": false,
+      "qwen3omni_caption": "The audio begins with a single adult male voice, speaking in clear, standard American English with a moderate pitch and a slightly dry, nasal timbre. He delivers the phrase, \"It says that I'm a little superstitious and occasionally naive,\" in a measured, declarative tone that is neither particularly emotional nor theatrical, but instead conveys a sense of detached self-awareness. As he speaks, a persistent, low-level electronic hiss is present, characteristic of a consumer-grade recording device, and subtle, brief inhalations and exhalations are audible between phrases. The recording environment is quiet and acoustically neutral, with no background music, ambient sounds, or additional voices. The audio concludes abruptly, cutting off mid-word in \"naive,\" indicating a hard edit without any fade-out or natural decay.\n\nThis clip features a lone, adult male making a reflective statement about his own personality, delivered in a calm and controlled manner. The recording is marked by moderate fidelity, a constant electronic hiss, and a sudden, edited ending. There are no other speakers, music, or environmental cues, and the context is ambiguous but likely personal or introspective in nature."
+    },
+    {
+      "start": 64.4,
+      "end": 65.381,
+      "text": " That's not true.",
+      "words": [
+        {
+          "word": "That's",
+          "start": 64.4,
+          "end": 64.63,
+          "score": 0.786
+        },
+        {
+          "word": "not",
+          "start": 64.671,
+          "end": 64.859,
+          "score": 0.959
+        },
+        {
+          "word": "true.",
+          "start": 64.922,
+          "end": 65.381,
+          "score": 0.851
+        }
+      ],
+      "text_whisper": " That's not true.",
+      "text_canary": "That's not true",
+      "text_parakeet": "That's not true.",
+      "text_ensemble": "That's not true.",
+      "language": "en",
+      "speaker": "SPEAKER_01",
+      "demucs": false,
+      "qwen3omni_caption": "The audio begins abruptly, immediately presenting a male voice with a mid-to-low pitch, clear timbre, and resonant tone. He articulates, “That’s not true,” with a neutral and matter-of-fact delivery, the phrase delivered at a moderate pace and ending with a falling intonation. The speaker’s voice is steady, and the word “true” is slightly emphasized, imparting a subtle sense of correction or denial. There is no audible emotional charge—no anger, urgency, or hesitation—suggesting the response is deliberate and composed. The environment is acoustically dry, with minimal reverberation, indicating a controlled recording space such as a studio or treated room. A faint, continuous electronic hiss, typical of microphone or preamp self-noise, is present but does not obscure speech intelligibility. No other sounds—such as ambient noise, movement, or additional voices—are detectable; the recording is focused solely on the speaker.\n\nFollowing the statement, the audio is abruptly cut off with no fade or trailing silence. This sudden end, marked by a brief digital click, suggests the recording was intentionally truncated, possibly for use as a sound effect or isolated clip.\n\nIn summary, the clip features a single, clearly recorded male utterance—“That’s not true”—delivered in a neutral, declarative tone within a controlled and acoustically dry environment. The absence of other sounds and the abrupt cut-off point to a deliberate, isolated recording, likely intended for media production, sound design, or as a sample for further use. The speaker’s identity and context remain unspecified, but the technical and contextual evidence supports a professional, studio-like origin."
+    },
+    {
+      "start": 65.76,
+      "end": 68.264,
+      "text": " Well, the test isn't 100% accurate.",
+      "words": [
+        {
+          "word": "Well,",
+          "start": 65.76,
+          "end": 66.063,
+          "score": 0.792
+        },
+        {
+          "word": "the",
+          "start": 66.083,
+          "end": 66.184,
+          "score": 0.972
+        },
+        {
+          "word": "test",
+          "start": 66.224,
+          "end": 66.507,
+          "score": 0.956
+        },
+        {
+          "word": "isn't",
+          "start": 66.628,
+          "end": 66.81,
+          "score": 0.81
+        },
+        {
+          "word": "100%",
+          "start": 66.83,
+          "end": 67.012,
+          "score": 0.789
+        },
+        {
+          "word": "accurate.",
+          "start": 67.88,
+          "end": 68.264,
+          "score": 0.87
+        }
+      ],
+      "text_whisper": " Well, the test isn't 100% accurate.",
+      "text_canary": "Well the test isn't 100% accurate",
+      "text_parakeet": "Well, the test isn't one hundred percent accurate.",
+      "text_ensemble": "Well, the test isn't 100% accurate. percent accurate.",
+      "language": "en",
+      "speaker": "SPEAKER_00",
+      "demucs": false,
+      "qwen3omni_caption": "The audio clip begins with a clear, digitally produced sound effect—a descending four-note chime reminiscent of a notification or confirmation cue. This chime, characterized by bright, bell-like tones, is immediately followed by a male speaker who delivers the statement: \"Well, the test isn't 100% accurate.\" His voice is calm, neutral, and slightly measured, with a General American accent and a smooth, mid-range pitch. The delivery is steady and lacks any emotional inflection, conveying a sense of factual objectivity. The spoken phrase is accompanied by a faint, persistent electronic hiss typical of a quiet, controlled studio environment, and the overall sound is crisp and free of distortion or room reverberation. The clip concludes with a brief pause, after which both the speaker's voice and the background hiss fade smoothly, ending the audio with a sense of deliberate closure.\n\nIn summary, the audio presents a professionally produced excerpt featuring a brief, digitally triggered chime, a neutral statement about test accuracy, and a controlled acoustic setting. The design and delivery suggest its purpose as an informative segment for an educational or corporate context, emphasizing clarity and factual communication in a modern, high-quality audio format."
+    },
+    {
+      "start": 68.99,
+      "end": 70.02,
+      "text": "Is that all it says?",
+      "words": [
+        {
+          "word": "Is",
+          "start": 68.99,
+          "end": 69.051,
+          "score": 0.918
+        },
+        {
+          "word": "that",
+          "start": 69.091,
+          "end": 69.233,
+          "score": 0.941
+        },
+        {
+          "word": "all",
+          "start": 69.29299999999999,
+          "end": 69.39399999999999,
+          "score": 0.855
+        },
+        {
+          "word": "it",
+          "start": 69.455,
+          "end": 69.515,
+          "score": 0.992
+        },
+        {
+          "word": "says?",
+          "start": 69.556,
+          "end": 70.02,
+          "score": 0.91
+        }
+      ],
+      "text_whisper": "Is that all it says?",
+      "text_canary": "Is that all it says",
+      "text_parakeet": "Is that all it says?",
+      "text_ensemble": "Is that all it says?",
+      "language": "en",
+      "demucs": false,
+      "qwen3omni_caption": "The audio clip opens with the immediate presence of a single male voice, positioned very close to the microphone in a quiet, acoustically dead indoor space. The speaker, a young to middle-aged adult, articulates the phrase “Is that all it says?” with a neutral and inquisitive tone, his pitch rising at the end to signal a genuine question. The delivery is calm and clear, marked by standard North American English pronunciation and no discernible accent. After the question, there is a brief pause—approximately half a second—during which no other sounds are present, reinforcing the controlled and solitary setting. Immediately following this pause, a distinct, synthetic electronic tone sounds. This tone is loud, centered, and unchanging, with a fundamental frequency of 1000 Hz and a buzzy, harmonically rich timbre reminiscent of a sawtooth or square wave. It is clearly produced by a digital synthesizer, such as a computer or smartphone, and is sharply cut off at the end of the recording, leaving no lingering echo or ambient noise.\n\nThroughout the clip, the technical quality is high: there is no background noise, hiss, or hum, and both the speech and electronic tone are rendered with clarity and minimal distortion. The absence of environmental cues and the dry acoustic profile suggest the recording took place in a small, well-dampened room, likely a home office or study, and was made using a consumer-grade device such as a smartphone or laptop microphone.\n\nThe content and delivery of the spoken phrase, coupled with the abrupt electronic tone, strongly imply a context of digital interaction or error feedback. The speaker is likely responding to a message, alert, or notification, questioning its brevity or completeness, and the tone serves as a digital signal of finality or system response. There is no evidence of any other participants, movement, or background activity.\n\nIn summary, the audio captures a brief, focused moment: a North American male, alone in a quiet room, asks a simple question in a neutral tone, followed by a synthetic electronic tone that signifies the conclusion of a digital interaction or system response. The clip is clear and unambiguous, offering a snapshot of a contemporary, technology-mediated communication event."
+    },
+    {
+      "start": 70.32,
+      "end": 70.74199999999999,
+      "text": " No.",
+      "words": [
+        {
+          "word": "No.",
+          "start": 70.32,
+          "end": 70.74199999999999,
+          "score": 0.938
+        }
+      ],
+      "text_whisper": " No.",
+      "text_canary": "No",
+      "text_parakeet": "No.",
+      "text_ensemble": "No.",
+      "language": "en",
+      "demucs": false,
+      "qwen3omni_caption": "The audio clip begins with a solitary, low-pitched male voice clearly enunciating the word “No.” The utterance is delivered in a neutral, declarative manner, with a steady, deliberate pace and a slight downward inflection at the end, emphasizing the finality of the negation. The voice is clean and closely recorded, with no noticeable distortion, background noise, or reverberation, indicating a controlled, quiet environment—likely a small, acoustically treated room or a studio. The speaker’s accent is standard American English, with a neutral timbre and no regional inflections. The word “No” is pronounced with a short, unvoiced plosive “n” and a sharply closed vowel, ending with a crisp, unvoiced “o,” which reinforces the sense of firm, unambiguous negation. The delivery is emotionally neutral, lacking any hint of frustration, hesitation, or sarcasm, and is consistent with formal or procedural contexts such as answering a direct question or responding to a prompt. Immediately after the word is spoken, the audio transitions to complete silence, with no residual sound, echo, or ambient noise, underscoring the controlled recording conditions.\n\nIn summary, the audio clip consists solely of a clear, neutral, and definitive “No” spoken by a male voice in standard American English, recorded in a quiet, acoustically controlled environment. The delivery is unemotional and direct, and the absence of any other sounds or context reinforces the sense of formality and purposeful communication."
+    },
+    {
+      "start": 70.80199999999999,
+      "end": 76.872,
+      "text": "It also says that I'm open-minded with great ambition, but that I can also be reckless and clumsy.",
+      "words": [
+        {
+          "word": "It",
+          "start": 70.80199999999999,
+          "end": 71.164,
+          "score": 0.848
+        },
+        {
+          "word": "also",
+          "start": 71.204,
+          "end": 71.445,
+          "score": 0.844
+        },
+        {
+          "word": "says",
+          "start": 71.506,
+          "end": 71.687,
+          "score": 0.792
+        },
+        {
+          "word": "that",
+          "start": 71.747,
+          "end": 71.847,
+          "score": 0.81
+        },
+        {
+          "word": "I'm",
+          "start": 71.88799999999999,
+          "end": 72.02799999999999,
+          "score": 0.815
+        },
+        {
+          "word": "open-minded",
+          "start": 72.209,
+          "end": 72.812,
+          "score": 0.842
+        },
+        {
+          "word": "with",
+          "start": 72.93299999999999,
+          "end": 73.053,
+          "score": 0.623
+        },
+        {
+          "word": "great",
+          "start": 73.17399999999999,
+          "end": 73.41499999999999,
+          "score": 0.826
+        },
+        {
+          "word": "ambition,",
+          "start": 73.596,
+          "end": 74.15899999999999,
+          "score": 0.838
+        },
+        {
+          "word": "but",
+          "start": 74.279,
+          "end": 74.38,
+          "score": 0.667
+        },
+        {
+          "word": "that",
+          "start": 74.42,
+          "end": 74.53999999999999,
+          "score": 0.75
+        },
+        {
+          "word": "I",
+          "start": 74.601,
+          "end": 74.621,
+          "score": 0.998
+        },
+        {
+          "word": "can",
+          "start": 74.661,
+          "end": 74.80199999999999,
+          "score": 0.887
+        },
+        {
+          "word": "also",
+          "start": 74.963,
+          "end": 75.244,
+          "score": 0.915
+        },
+        {
+          "word": "be",
+          "start": 75.344,
+          "end": 75.445,
+          "score": 0.973
+        },
+        {
+          "word": "reckless",
+          "start": 75.565,
+          "end": 76.068,
+          "score": 0.873
+        },
+        {
+          "word": "and",
+          "start": 76.229,
+          "end": 76.309,
+          "score": 0.899
+        },
+        {
+          "word": "clumsy.",
+          "start": 76.41,
+          "end": 76.872,
+          "score": 0.904
+        }
+      ],
+      "text_whisper": "It also says that I'm open-minded with great ambition, but that I can also be reckless and clumsy.",
+      "text_canary": "It also says that I'm open-minded with great ambition but that I can also be reckless and clumsy.",
+      "text_parakeet": "It also says that I'm open-minded with great ambition, but that I can also be reckless and clumsy.",
+      "text_ensemble": "It also says that I'm open-minded with great ambition, but that I can also be reckless and clumsy.",
+      "language": "en",
+      "demucs": false,
+      "qwen3omni_caption": "The audio clip begins with a faint, low-frequency thump and a brief, soft rustling sound, likely produced by the speaker adjusting their posture or clothing as they settle into position. This is immediately followed by a subtle, high-frequency click, which could be the sound of a microphone being activated or a minor movement against the mic. The room is quiet, with a faint, low-level electronic hiss present throughout, indicating a small, acoustically dampened environment with little reverberation and no audible external disturbances. The recording is monophonic, with a single, centered audio source.\n\nA male speaker, positioned close to the microphone, begins to speak in a neutral, conversational tone. His voice is clear, steady, and slightly nasal, with a General American accent and no regional inflections. The delivery is natural, marked by a moderate pitch and an unhurried pace, with no emotional coloring. He says: \"It also says that I'm open-minded with great ambition, but that I can also be reckless and clumsy.\" The speech is articulated with standard American pronunciation, and the final word, \"clumsy,\" is cut off abruptly, ending the clip mid-syllable. The recording quality is high, with minimal background noise and no distortion, and the room’s acoustic properties suggest a private setting such as a home office or small studio.\n\nIn summary, the audio features a single male speaker delivering a neutral, reflective statement about his personality traits, as described by a third party, in a quiet, controlled environment. The recording is technically clean and free of external distractions, emphasizing the speaker’s candid self-assessment and the intimate, solitary nature of the moment."
+    },
+    {
+      "start": 76.932,
+      "end": 78.58,
+      "text": "This is stupid.",
+      "words": [
+        {
+          "word": "This",
+          "start": 76.932,
+          "end": 77.636,
+          "score": 0.921
+        },
+        {
+          "word": "is",
+          "start": 77.716,
+          "end": 77.776,
+          "score": 0.971
+        },
+        {
+          "word": "stupid.",
+          "start": 77.857,
+          "end": 78.58,
+          "score": 0.891
+        }
+      ],
+      "text_whisper": "This is stupid.",
+      "text_canary": "This is stupid",
+      "text_parakeet": "This is stupid.",
+      "text_ensemble": "This is stupid.",
+      "language": "en",
+      "demucs": false,
+      "qwen3omni_caption": "The audio clip begins abruptly with a single male voice, whose tone is firm and exasperated, delivering the phrase \"This is stupid.\" The statement is spoken with deliberate, clipped pacing and a downward inflection, conveying frustration and a sense of resignation. The delivery is clear and intelligible, with a General American English accent that lacks regional or dialectal features. The recording is exceptionally clean, featuring no ambient noise, reverberation, or background interference, and the voice is captured with high fidelity, suggesting the use of a close microphone in a controlled, acoustically treated environment. The phrase is cut off mid-word, with no trailing sounds, further indicating a deliberate edit or post-production truncation.\n\nImmediately after the spoken phrase, a synthesized electronic sound effect is triggered. This effect consists of a descending, multi-layered chord that begins with a bright, buzzy timbre and quickly transitions into a deeper, resonant, and slightly gritty texture. The chord descends rapidly in pitch, producing a dramatic \"wah-wah-wah\" or \"womp-womp\" sensation, and is characterized by a fast attack, short decay, and a clean, digital quality. The sound effect is purely electronic, with no naturalistic or environmental cues, and serves as a comedic, game-show-style \"failure\" cue, reminiscent of classic internet meme soundtracks and digital media. The effect is presented in perfect isolation, with no overlap or blending with the voice, and is abruptly cut off at the end of the clip.\n\nThroughout the audio, there is no background noise, environmental sound, or additional speech, reinforcing the impression of a staged, studio-quality production. The absence of any contextual or ambient cues, combined with the abrupt editing, suggests the clip is designed as a meme, reaction video, or digital sound effect, rather than a segment from a longer narrative or live recording. The speaker's emotional tone and the sound effect together create a sense of comic frustration and anticlimax, universally recognizable in online culture.\n\nIn summary, the audio is a tightly edited, high-fidelity sound bite featuring a single, frustrated male voice declaring \"This is stupid,\" immediately followed by a dramatic, synthesized \"failure\" sound effect. The production is minimalistic and context-free, crafted for immediate comedic or meme use, and exemplifies the conventions of contemporary digital humor and internet sound design."
+    },
+    {
+      "start": 79.11999999999999,
+      "end": 79.813,
+      "text": " Okay.",
+      "words": [
+        {
+          "word": "Okay.",
+          "start": 79.11999999999999,
+          "end": 79.813,
+          "score": 0.533
+        }
+      ],
+      "text_whisper": " Okay.",
+      "text_canary": "Okay",
+      "text_parakeet": "Okay.",
+      "text_ensemble": "Okay.",
+      "language": "en",
+      "demucs": false,
+      "qwen3omni_caption": "The audio begins with a single male voice, close to the microphone, speaking the phrase \"Okay.\" The delivery is clear and neutral, with a slight upward inflection on the final syllable, suggesting it is an acknowledgment rather than a command. There is no background noise, reverberation, or environmental sound, indicating a controlled, acoustically treated environment, likely a home studio or professional voice-over booth. The speaker's accent is General American English, and the speech is crisp and intelligible, with a mid-to-low pitch and a smooth, measured cadence. Immediately after the word \"Okay,\" the recording is abruptly cut off, ending mid-phrase with no fade or trailing silence. This sudden termination points to a technical error, such as a software crash or manual interruption, rather than a deliberate conclusion. Throughout the clip, there is no evidence of music, branding, or additional speech, and the recording remains strictly mono with a focus on vocal clarity. The overall impression is of a brief, isolated vocal sample—possibly intended for use in digital media, voice prompts, or as a test recording—marked by its technical precision and abrupt ending, with no contextual or cultural markers beyond the speaker's accent."
+    },
+    {
+      "start": 79.834,
+      "end": 81.22,
+      "text": "Anyone else want to read theirs?",
+      "words": [
+        {
+          "word": "Anyone",
+          "start": 79.834,
+          "end": 80.16,
+          "score": 0.934
+        },
+        {
+          "word": "else",
+          "start": 80.221,
+          "end": 80.36399999999999,
+          "score": 0.998
+        },
+        {
+          "word": "want",
+          "start": 80.405,
+          "end": 80.568,
+          "score": 0.89
+        },
+        {
+          "word": "to",
+          "start": 80.609,
+          "end": 80.67,
+          "score": 0.748
+        },
+        {
+          "word": "read",
+          "start": 80.731,
+          "end": 80.874,
+          "score": 0.997
+        },
+        {
+          "word": "theirs?",
+          "start": 80.91499999999999,
+          "end": 81.22,
+          "score": 0.767
+        }
+      ],
+      "text_whisper": "Anyone else want to read theirs?",
+      "text_canary": "Anyone else want to read theirs?",
+      "text_parakeet": "Anyone else wants to read theirs?",
+      "text_ensemble": "Anyone else want to read theirs?",
+      "language": "en",
+      "demucs": false,
+      "qwen3omni_caption": "The audio clip opens with a clear, close-miked male voice, slightly left of center in the stereo field, asking, \"Anyone else want to read theirs?\" The speaker’s accent is General American English, and his tone is relaxed, informal, and gently inviting, suggesting a casual, friendly setting. The delivery is steady and unhurried, with the final word \"theirs\" trailing off as the clip ends. There is no audible response from anyone else; no voices, laughter, or ambient sounds interrupt the quiet moment. The environment is acoustically dead, indicating a small, well-furnished indoor space such as a living room or bedroom, and there is no evidence of electronic devices, music, or external noise. The recording is of high fidelity, with crisp clarity and minimal, natural room reverb, free from technical flaws.\n\nThis brief exchange captures a moment of friendly group interaction, likely in a home or informal gathering where participants are reading or sharing written material. The speaker’s use of \"theirs\" implies a prior turn or contribution by another person, and the inclusive phrasing suggests a relaxed, collaborative atmosphere among peers. The absence of any other voices or sounds emphasizes the focused, private nature of the setting, while the modern, clear recording quality points to a recent, everyday context. Overall, the audio documents an inviting, informal request for further participation, highlighting the dynamics of a small group engaged in shared literary or conversational activity."
+    },
+    {
+      "start": 81.75999999999999,
+      "end": 82.201,
+      "text": " I'll go.",
+      "words": [
+        {
+          "word": "I'll",
+          "start": 81.75999999999999,
+          "end": 82.021,
+          "score": 0.783
+        },
+        {
+          "word": "go.",
+          "start": 82.06099999999999,
+          "end": 82.201,
+          "score": 0.907
+        }
+      ],
+      "text_whisper": " I'll go.",
+      "text_canary": "I'll go",
+      "text_parakeet": "Okay.",
+      "text_ensemble": "I'll go.",
+      "language": "en",
+      "demucs": false,
+      "qwen3omni_caption": "The audio clip begins with a sharp, high-frequency percussive click, likely produced by a plastic switch or button being pressed. This sound is dry and immediate, with no reverberation, indicating a close microphone or direct input. Immediately following, a low-frequency electronic hum emerges, characterized by a fundamental frequency around 50 Hz and a harmonically rich, buzzing texture typical of mains electrical interference. The hum is stable and unchanging, with no modulation or dynamic variation, suggesting a stationary source in a small or acoustically treated indoor environment. At the same moment, a single, low-pitched, male voice with a General American accent delivers the phrase \"I'll go\" in a neutral, matter-of-fact tone. The voice is clear, direct, and emotionally neutral, with no evidence of excitement, hesitation, or urgency. After the speech, the hum continues unchanged until the recording ends abruptly with no fade or trailing noise, indicating a deliberate or technical cutoff.\n\nIn summary, the recording captures a succinct sequence: a mechanical switch click, the onset of a steady electronic hum, and a single, neutral male utterance, \"I'll go.\" The setting is acoustically controlled and free of extraneous sounds, suggesting a focused recording session in a small indoor space, likely for technical, documentation, or demonstration purposes. The audio’s clarity and absence of background noise reinforce its utilitarian intent, with no emotional or narrative cues beyond the brief spoken phrase."
+    },
+    {
+      "start": 82.703,
+      "end": 85.13,
+      "text": "It says that I'm an extroverted, well-balanced person.",
+      "words": [
+        {
+          "word": "It",
+          "start": 82.703,
+          "end": 82.76299999999999,
+          "score": 0.99
+        },
+        {
+          "word": "says",
+          "start": 82.823,
+          "end": 82.964,
+          "score": 0.86
+        },
+        {
+          "word": "that",
+          "start": 83.00399999999999,
+          "end": 83.104,
+          "score": 0.835
+        },
+        {
+          "word": "I'm",
+          "start": 83.14399999999999,
+          "end": 83.265,
+          "score": 0.727
+        },
+        {
+          "word": "an",
+          "start": 83.30499999999999,
+          "end": 83.345,
+          "score": 0.998
+        },
+        {
+          "word": "extroverted,",
+          "start": 83.505,
+          "end": 84.067,
+          "score": 0.831
+        },
+        {
+          "word": "well-balanced",
+          "start": 84.14699999999999,
+          "end": 84.729,
+          "score": 0.733
+        },
+        {
+          "word": "person.",
+          "start": 84.76899999999999,
+          "end": 85.13,
+          "score": 0.969
+        }
+      ],
+      "text_whisper": "It says that I'm an extroverted, well-balanced person.",
+      "text_canary": "It says that I'm an extroverted well balanced person",
+      "text_parakeet": "It says that I'm an extroverted, well balanced person.",
+      "text_ensemble": "It says that I'm an extroverted, well balanced person",
+      "language": "en",
+      "demucs": false,
+      "qwen3omni_caption": "The audio clip begins in a quiet, controlled environment, likely a studio or home office, where a young adult woman with a clear, neutral British accent speaks in a composed and matter-of-fact tone. She states, \"It says that I'm an extroverted, well-balanced person.\" Her delivery is smooth and measured, with a slight emphasis on \"extroverted,\" suggesting mild self-awareness or amusement. As she finishes, she emits a soft, genuine chuckle that conveys a hint of self-deprecating humor and gentle amusement at the feedback. Immediately after, a synthesized chime sounds—a high-pitched, descending three-note melody—characteristic of a digital notification or confirmation tone, followed by a brief, low-frequency electronic hum reminiscent of a system startup or processing sound. The background remains free of ambient noise, and the recording is pristine, with no distortion or artifacts. The clip concludes abruptly, with no fade-out or lingering sound.\n\nIn summary, the recording captures a succinct, high-fidelity moment of a British woman reacting to a personality test result, expressing mild amusement, and followed by a distinctive electronic chime and hum. The setting is professional and digitally mediated, with all sounds and speech carefully isolated, reflecting a modern, technology-driven context."
+    },
+    {
+      "start": 85.511,
+      "end": 88.22,
+      "text": "It says I am generous, outspoken and very diligent.",
+      "words": [
+        {
+          "word": "It",
+          "start": 85.511,
+          "end": 85.572,
+          "score": 0.982
+        },
+        {
+          "word": "says",
+          "start": 85.612,
+          "end": 85.752,
+          "score": 0.885
+        },
+        {
+          "word": "I",
+          "start": 85.812,
+          "end": 85.852,
+          "score": 0.329
+        },
+        {
+          "word": "am",
+          "start": 85.913,
+          "end": 85.973,
+          "score": 0.771
+        },
+        {
+          "word": "generous,",
+          "start": 86.053,
+          "end": 86.454,
+          "score": 0.913
+        },
+        {
+          "word": "outspoken",
+          "start": 86.695,
+          "end": 87.25699999999999,
+          "score": 0.92
+        },
+        {
+          "word": "and",
+          "start": 87.377,
+          "end": 87.457,
+          "score": 0.818
+        },
+        {
+          "word": "very",
+          "start": 87.517,
+          "end": 87.758,
+          "score": 0.676
+        },
+        {
+          "word": "diligent.",
+          "start": 87.818,
+          "end": 88.22,
+          "score": 0.909
+        }
+      ],
+      "text_whisper": "It says I am generous, outspoken and very diligent.",
+      "text_canary": "It says I am generous, outspoken and very diligent.",
+      "text_parakeet": "It says I am generous, outspoken and very diligent.",
+      "text_ensemble": "It says I am generous, outspoken and very diligent.",
+      "language": "en",
+      "demucs": false,
+      "qwen3omni_caption": "The audio begins abruptly with a clear, mid-pitched female voice delivering a single, confident statement: \"It says I am generous, outspoken, and very diligent.\" Her pronunciation is precise and neutral, with a General Australian accent, and her tone is measured and self-assured, conveying pride and a hint of satisfaction. The recording is of high quality, with a wide frequency range, minimal background noise, and no distortion or artifacts. The speech is set against a subtle, low-frequency electronic hum and a faint broadband hiss, likely from the recording environment or equipment. There are no other sounds, voices, or environmental cues present, and the acoustic setting is dry, suggesting a small, treated indoor space such as a studio or sound booth.\n\nAs the final word \"diligent\" is spoken, the voice is suddenly and cleanly cut off mid-syllable, with no natural fade or residual sound. Immediately following this abrupt interruption, a loud, synthetic electronic tone begins. This tone is a pure, low-frequency square wave, centered around 110 Hz (musical note A2), characterized by a harsh, buzzy timbre due to its odd-numbered harmonics. The tone is unwavering in pitch and amplitude, with no modulation or spatial effects, and it persists alone until the end of the recording. Its onset is sharp and unmistakable, and it is devoid of any ambient context, serving as a stark and jarring interruption.\n\nThroughout the clip, there is no music or additional speech, and the only sounds are the female voice and the electronic tone. The transition from speech to tone is abrupt, with no overlap or blending, reinforcing the sense of an imposed interruption. The content and delivery of the speech, combined with the sudden electronic tone, imply a constructed or edited context—potentially a media segment, digital notification, or comedic sound effect. The Australian accent and the structure of the statement suggest the speaker is referencing a test result, feedback, or self-assessment, and the tone may signify an error, denial, or censorship of the preceding message.\n\nIn summary, the audio presents a concise, high-fidelity recording of a confident Australian female voice stating a self-assessment, followed by an abrupt, synthetic electronic tone that abruptly ends the clip. The technical and cultural details point to a constructed context, with the tone serving as a clear signal of interruption or negation."
+    },
+    {
+      "start": 88.541,
+      "end": 89.604,
+      "text": "This is so true.",
+      "words": [
+        {
+          "word": "This",
+          "start": 88.541,
+          "end": 88.681,
+          "score": 0.92
+        },
+        {
+          "word": "is",
+          "start": 88.761,
+          "end": 88.801,
+          "score": 0.984
+        },
+        {
+          "word": "so",
+          "start": 89.002,
+          "end": 89.26299999999999,
+          "score": 0.9
+        },
+        {
+          "word": "true.",
+          "start": 89.363,
+          "end": 89.604,
+          "score": 0.973
+        }
+      ],
+      "text_whisper": "This is so true.",
+      "text_canary": "This is so true",
+      "text_parakeet": "This is so true.",
+      "text_ensemble": "This is so true.",
+      "language": "en",
+      "demucs": false,
+      "qwen3omni_caption": "The audio opens with an abrupt, high-pitched electronic tone—a pure sine wave at approximately 440 Hz (musical note A4)—which immediately dominates the soundscape. The tone is dry, devoid of reverb or spatial effects, and stands out sharply against a nearly silent background, suggesting a controlled studio or office environment. No other sounds, such as speech, ambient noise, or music, are present. The tone remains unwavering and unmodulated, maintaining its intensity and pitch without any dynamic change. It ends just as abruptly as it began, with no fade-out, leaving the recording silent and sterile.\n\nThis recording features only a single, sustained electronic tone at 440 Hz, with no speech, music, or environmental sounds. Its technical characteristics—clean, high-fidelity signal and absence of ambient noise—indicate professional production, likely for technical, testing, or demonstration purposes. The lack of cultural or social context, along with the sterile presentation, suggests the audio is intended for calibration, equipment testing, or educational demonstration rather than artistic or entertainment use."
+    },
+    {
+      "start": 89.985,
+      "end": 93.235,
+      "text": "It also says that I am a magnanimous, eloquent and daring.",
+      "words": [
+        {
+          "word": "It",
+          "start": 89.985,
+          "end": 90.045,
+          "score": 0.805
+        },
+        {
+          "word": "also",
+          "start": 90.16499999999999,
+          "end": 90.40599999999999,
+          "score": 0.903
+        },
+        {
+          "word": "says",
+          "start": 90.486,
+          "end": 90.627,
+          "score": 0.691
+        },
+        {
+          "word": "that",
+          "start": 90.667,
+          "end": 90.78699999999999,
+          "score": 0.815
+        },
+        {
+          "word": "I",
+          "start": 90.827,
+          "end": 90.848,
+          "score": 0.77
+        },
+        {
+          "word": "am",
+          "start": 90.928,
+          "end": 90.988,
+          "score": 0.993
+        },
+        {
+          "word": "a",
+          "start": 91.02799999999999,
+          "end": 91.048,
+          "score": 0.032
+        },
+        {
+          "word": "magnanimous,",
+          "start": 91.148,
+          "end": 91.89099999999999,
+          "score": 0.961
+        },
+        {
+          "word": "eloquent",
+          "start": 92.091,
+          "end": 92.493,
+          "score": 0.848
+        },
+        {
+          "word": "and",
+          "start": 92.613,
+          "end": 92.693,
+          "score": 0.843
+        },
+        {
+          "word": "daring.",
+          "start": 92.79299999999999,
+          "end": 93.235,
+          "score": 0.91
+        }
+      ],
+      "text_whisper": "It also says that I am a magnanimous, eloquent and daring.",
+      "text_canary": "It also says that I am a magnanimous eloquent and daring",
+      "text_parakeet": "It also says that I am a magnanimous, eloquent and daring.",
+      "text_ensemble": "It also says that I am a magnanimous, eloquent and daring.",
+      "language": "en",
+      "demucs": false,
+      "qwen3omni_caption": "The audio begins with the phrase, “It also says that I am a magnanimous, eloquent, and daring,” delivered in a clear, measured, and neutral tone by a female voice. The speaker’s pronunciation is standard, with a General American accent, and her pace is slow and deliberate, each word distinctly articulated. The sentence is presented in a declarative manner, without any emotional inflection or change in pitch, suggesting the speaker is reading from a prepared text or script. The recording is of high fidelity, with no background noise, reverberation, or artifacts; the voice is close-miked and centered, creating an intimate and focused listening experience. The speech ends abruptly mid-word, with a sharp, digital cutoff that indicates the file was edited or trimmed without a fade-out, reinforcing the sense of a fragment or excerpt from a larger source.\n\nThe content is a direct quotation of praise, referencing character traits such as magnanimity, eloquence, and daring, which are often associated with leadership and heroism. This style of praise is typical of formal, literary, or historical contexts, suggesting the speaker is reciting a passage from a biographical or fictional narrative. The absence of contextual or environmental cues, combined with the neutral, performative delivery, implies the audio is designed for purposes such as audiobook narration, dramatic reading, or educational voice-over. The fragmentary nature and sudden ending further indicate that this clip is not a standalone piece but rather a segment extracted from a broader work.\n\nIn summary, the audio presents a short, high-quality excerpt featuring a neutral-toned female voice reading a formal, literary-style compliment. The delivery is precise and impersonal, the content evokes themes of leadership and heroism, and the abrupt cutoff suggests the clip is a fragment from a larger narrative, likely intended for audiobook or dramatic presentation."
+    },
+    {
+      "start": 93.696,
+      "end": 94.98,
+      "text": "This is totally me.",
+      "words": [
+        {
+          "word": "This",
+          "start": 93.696,
+          "end": 93.817,
+          "score": 0.728
+        },
+        {
+          "word": "is",
+          "start": 93.89699999999999,
+          "end": 93.957,
+          "score": 0.919
+        },
+        {
+          "word": "totally",
+          "start": 94.077,
+          "end": 94.599,
+          "score": 0.857
+        },
+        {
+          "word": "me.",
+          "start": 94.65899999999999,
+          "end": 94.98,
+          "score": 0.948
+        }
+      ],
+      "text_whisper": "This is totally me.",
+      "text_canary": "This is totally me",
+      "text_parakeet": "This is totally me.",
+      "text_ensemble": "This is totally me.",
+      "language": "en",
+      "demucs": false,
+      "qwen3omni_caption": "The audio clip begins with a single female voice, speaking in a clear, enthusiastic, and high-pitched tone characteristic of a young adult American woman. She says, \"This is totally me,\" with the word \"totally\" pronounced in a distinctly exaggerated, sing-song manner, and a rising inflection on \"me.\" The delivery is energetic, confident, and playful, suggesting a performative or comedic context. The speaker is positioned close to the microphone, resulting in a direct, intimate sound, and her voice is slightly reverberant, indicating a small, acoustically reflective room—likely a bedroom or home office. The recording is of moderate to high fidelity, with a full frequency range, no distortion, and only a faint electronic hiss in the background, which is most noticeable during the brief pause after the phrase ends. The clip contains no other speech, music, or ambient sounds; the environment is acoustically isolated, with no evidence of other people or external noise.\n\nThis phrase, \"This is totally me,\" is delivered as a self-referential, humorous affirmation, likely intended as a punchline or a relatable tagline. The style and delivery, combined with the absence of extraneous sounds, suggest the clip is a standalone comedic audio segment, possibly for social media or meme content. The speaker’s accent is General American English, and the phrase’s informal tone and exaggerated delivery reinforce its purpose as a playful, internet-savvy statement of self-identification. The clip concludes with a natural fade-out, leaving a lingering sense of amusement and self-awareness.\n\nIn summary, the audio features a young American woman energetically stating, \"This is totally me,\" in a small, quiet room, with no other sounds present. The recording is high-quality and intimate, and the phrase is delivered as a punchline or humorous affirmation, likely for comedic or meme-related online content."
+    },
+    {
+      "start": 95.75999999999999,
+      "end": 96.451,
+      "text": " Whatever.",
+      "words": [
+        {
+          "word": "Whatever.",
+          "start": 95.75999999999999,
+          "end": 96.451,
+          "score": 0.926
+        }
+      ],
+      "text_whisper": " Whatever.",
+      "text_canary": "Whatever",
+      "text_parakeet": "Whatever.",
+      "text_ensemble": "Whatever.",
+      "language": "en",
+      "demucs": false,
+      "qwen3omni_caption": "The audio clip begins with a clear, close-miked male voice saying \"Whatever\" in a single, uninflected syllable. The word is delivered in a flat, dismissive tone, with a mid-to-low pitch and no emotional inflection, conveying resignation or indifference. The speaker’s accent is General American English, and the recording is high-fidelity, free of distortion or background noise, suggesting a controlled studio environment. The voice is positioned slightly to the left in the stereo field, and a subtle, natural room reverberation is present, indicating the space is acoustically treated but not completely soundproof. No other sounds, speech, or music are heard throughout the clip.\n\nAfter the utterance, the recording transitions abruptly to digital silence, with no lingering reverberation or fade-out. This sudden cut suggests deliberate editing, likely for use in a sample-based context such as audio libraries or digital music production. The overall mood is emotionally neutral, with the speaker’s tone remaining unchanged and no cues to indicate a specific narrative or interaction.\n\nIn summary, this audio clip presents a solitary, dismissive utterance of \"Whatever\" by a male speaker, recorded in a high-quality studio setting. The clip is concise, emotionally neutral, and purposefully edited for use as a sound effect or sample in media production, with no additional speech, music, or contextual cues provided."
+    },
+    {
+      "start": 96.756,
+      "end": 98.34,
+      "text": "These tests are baloney.",
+      "words": [
+        {
+          "word": "These",
+          "start": 96.756,
+          "end": 96.91799999999999,
+          "score": 0.788
+        },
+        {
+          "word": "tests",
+          "start": 97.02,
+          "end": 97.324,
+          "score": 0.807
+        },
+        {
+          "word": "are",
+          "start": 97.345,
+          "end": 97.487,
+          "score": 0.662
+        },
+        {
+          "word": "baloney.",
+          "start": 97.50699999999999,
+          "end": 98.34,
+          "score": 0.835
+        }
+      ],
+      "text_whisper": "These tests are baloney.",
+      "text_canary": "These tests are baloney",
+      "text_parakeet": "These tests are baloney.",
+      "text_ensemble": "These tests are baloney.",
+      "language": "en",
+      "demucs": false,
+      "qwen3omni_caption": "The audio clip begins with a brief, sharp intake of breath from a young adult male, immediately followed by the clear, close-mic’d sound of his voice. He delivers the phrase, “These tests are baloney,” with a tone that is casual, dismissive, and tinged with mild sarcasm. His speech is informal, with a standard American accent and a slight upward inflection on “baloney,” which underscores his skepticism and casual attitude. The speaker’s proximity to the microphone is evident, as his voice is prominent and detailed, while the room’s subtle reverberation hints at a small-to-medium-sized, untreated residential space, likely a bedroom or home office. The recording is high-fidelity, with no distortion, static, or background noise except for a faint, steady electronic hiss, characteristic of consumer-grade equipment.\n\nThroughout the clip, the environment remains static; there are no other voices, movements, or audible reactions. The absence of background chatter, music, or environmental sounds suggests a solitary setting, possibly a private study or work area. The speaker’s delivery is steady and confident, with no hesitation or emotional escalation, and the word “baloney” is spoken with a playful, tongue-in-cheek emphasis that conveys mild amusement or derision toward the tests he is referencing. The phrase is left unresolved, with the speaker’s statement abruptly ending mid-thought, leaving the context of the “tests” open to interpretation but implying a personal, informal critique—potentially about school, work, or self-assessment.\n\nIn summary, the audio captures a single, close-mic’d, informal statement by a young American man, voiced with casual sarcasm and mild amusement in a quiet, untreated residential room. The high-quality recording and lack of external sounds reinforce the private, solitary nature of the moment, while the speaker’s tone and word choice clearly communicate skepticism and dismissiveness toward the “tests” he references."
+    },
+    {
+      "start": 103.52,
+      "end": 104.283,
+      "text": " All right, we're back.",
+      "words": [
+        {
+          "word": "All",
+          "start": 103.52,
+          "end": 103.61999999999999,
+          "score": 0.16
+        },
+        {
+          "word": "right,",
+          "start": 103.64099999999999,
+          "end": 103.78099999999999,
+          "score": 0.783
+        },
+        {
+          "word": "we're",
+          "start": 103.801,
+          "end": 103.942,
+          "score": 0.577
+        },
+        {
+          "word": "back.",
+          "start": 104.002,
+          "end": 104.283,
+          "score": 0.97
+        }
+      ],
+      "text_whisper": " All right, we're back.",
+      "text_canary": "Alright we're back",
+      "text_parakeet": "All right, we're back.",
+      "text_ensemble": "All right, we're back.",
+      "language": "en",
+      "demucs": false,
+      "qwen3omni_caption": "The audio clip begins abruptly with a faint, low-frequency electronic hum, immediately followed by the sharp, percussive click of a mechanical mouse or keyboard. A brief, subtle mouth sound—likely a throat clearing or soft intake of breath—precedes the main speech. The male speaker, positioned close to the microphone in a quiet, acoustically dampened environment, delivers the phrase, \"Alright, we're back...\" in a clear, conversational tone. His voice is smooth, mid-to-low in pitch, and exhibits a General American accent, suggesting he is a young to middle-aged adult. The delivery is steady, confident, and informal, with a rising inflection on \"back,\" conveying a sense of casual reassurance and friendly engagement. The phrase is cut off mid-syllable with no trailing sound, indicating a deliberate edit. Throughout, the electronic hum persists at a low level, and no other environmental or musical sounds are present. The audio is marked by a slight hiss, typical of consumer-grade recording equipment, with no distortion or clipping. The overall atmosphere is focused and intimate, suggesting the clip is part of a podcast, livestream, or video recording aimed at a digital audience, with the speaker signaling a return to content after a brief interruption.\n\nIn summary, the audio captures a brief, informal transition moment as a male speaker signals his return to a digital broadcast, set against a quiet, modern recording environment and marked by subtle technical and acoustic details typical of contemporary online media."
+    },
+    {
+      "start": 104.344,
+      "end": 108.744,
+      "text": "So we're going to divide this up into Language Takeaway parts one and two.",
+      "words": [
+        {
+          "word": "So",
+          "start": 104.344,
+          "end": 104.585,
+          "score": 0.96
+        },
+        {
+          "word": "we're",
+          "start": 104.605,
+          "end": 104.926,
+          "score": 0.519
+        },
+        {
+          "word": "going",
+          "start": 104.946,
+          "end": 105.067,
+          "score": 0.675
+        },
+        {
+          "word": "to",
+          "start": 105.087,
+          "end": 105.127,
+          "score": 0.983
+        },
+        {
+          "word": "divide",
+          "start": 105.167,
+          "end": 105.469,
+          "score": 0.83
+        },
+        {
+          "word": "this",
+          "start": 105.54899999999999,
+          "end": 105.71,
+          "score": 0.896
+        },
+        {
+          "word": "up",
+          "start": 105.931,
+          "end": 106.011,
+          "score": 0.995
+        },
+        {
+          "word": "into",
+          "start": 106.232,
+          "end": 106.413,
+          "score": 0.99
+        },
+        {
+          "word": "Language",
+          "start": 106.473,
+          "end": 106.835,
+          "score": 0.884
+        },
+        {
+          "word": "Takeaway",
+          "start": 106.855,
+          "end": 107.297,
+          "score": 0.571
+        },
+        {
+          "word": "parts",
+          "start": 107.357,
+          "end": 107.578,
+          "score": 0.93
+        },
+        {
+          "word": "one",
+          "start": 107.779,
+          "end": 107.89999999999999,
+          "score": 0.82
+        },
+        {
+          "word": "and",
+          "start": 108.161,
+          "end": 108.30199999999999,
+          "score": 0.897
+        },
+        {
+          "word": "two.",
+          "start": 108.483,
+          "end": 108.744,
+          "score": 0.962
+        }
+      ],
+      "text_whisper": "So we're going to divide this up into Language Takeaway parts one and two.",
+      "text_canary": "So we're going to divide this up into language takeaway parts one and two",
+      "text_parakeet": "So we're going to divide this up into language takeaway parts one and two.",
+      "text_ensemble": "So we're going to divide this up into language takeaway parts one and two.",
+      "language": "en",
+      "demucs": false,
+      "qwen3omni_caption": "The audio clip opens mid-sentence with a male speaker, whose clear, confident voice and General American English accent immediately establish an instructional tone. He is in the midst of explaining, “…so we’re going to divide this up into language takeaway parts one and two.” The delivery is measured and precise, with the speaker emphasizing “language takeaway parts one and two” by slowing his pace and slightly raising his pitch, indicating the importance of this segment’s structure. The recording is of high fidelity, free from any background noise or distortion, and is characterized by a subtle, consistent room reverberation, suggesting it was recorded in a small-to-medium, untreated space such as a home office or study. Throughout the speech, the speaker maintains a neutral, focused demeanor, with no emotional inflection or hesitation, and his manner is professional and didactic. There are no additional voices, music, or sound effects; the entire clip is dedicated to this single instructional phrase.\n\nIn summary, the clip features a single male speaker with a General American accent, who clearly and professionally introduces a structured language-learning segment divided into two parts. The setting is acoustically controlled, with no extraneous sounds, and the speaker’s tone is neutral and instructional, conveying the impression of a focused educational recording aimed at learners or students."
+    },
+    {
+      "start": 108.804,
+      "end": 112.34,
+      "text": "So let's start with five keywords now on Language Takeaway.",
+      "words": [
+        {
+          "word": "So",
+          "start": 108.804,
+          "end": 108.904,
+          "score": 0.968
+        },
+        {
+          "word": "let's",
+          "start": 108.925,
+          "end": 109.105,
+          "score": 0.782
+        },
+        {
+          "word": "start",
+          "start": 109.125,
+          "end": 109.36699999999999,
+          "score": 0.859
+        },
+        {
+          "word": "with",
+          "start": 109.42699999999999,
+          "end": 109.628,
+          "score": 0.877
+        },
+        {
+          "word": "five",
+          "start": 109.809,
+          "end": 110.19,
+          "score": 0.876
+        },
+        {
+          "word": "keywords",
+          "start": 110.31099999999999,
+          "end": 110.79299999999999,
+          "score": 0.855
+        },
+        {
+          "word": "now",
+          "start": 110.87299999999999,
+          "end": 111.074,
+          "score": 0.876
+        },
+        {
+          "word": "on",
+          "start": 111.255,
+          "end": 111.315,
+          "score": 0.979
+        },
+        {
+          "word": "Language",
+          "start": 111.37599999999999,
+          "end": 111.697,
+          "score": 0.864
+        },
+        {
+          "word": "Takeaway.",
+          "start": 111.75699999999999,
+          "end": 112.34,
+          "score": 0.89
+        }
+      ],
+      "text_whisper": "So let's start with five keywords now on Language Takeaway.",
+      "text_canary": "So let's start with five keywords now on language takeaway.",
+      "text_parakeet": "So let's start with five key words now on language takeaway.",
+      "text_ensemble": "So let's start with five keywords now on Language Takeaway. takeaway.",
+      "language": "en",
+      "demucs": false,
+      "qwen3omni_caption": "The audio clip begins with the clear, close-miked voice of a male speaker, who is positioned slightly left of center in the stereo field. The speaker, exhibiting a General American accent and a steady, deliberate delivery, introduces the segment with the phrase: \"So let's start with five key words now on Language Takeaway.\" His tone is calm, neutral, and focused, with no discernible emotional inflection or regional accent. The voice is accompanied by a subtle, continuous low-frequency hum, likely originating from nearby electronic equipment such as a computer or audio interface, and a faint, high-frequency electronic hiss, both of which are characteristic of a quiet, well-treated home studio or office environment. The recording is free from external noises, environmental sounds, or any background distractions, emphasizing a highly controlled, professional setting.\n\nAs the speaker concludes the introductory phrase, a brief, sharp click is heard, corresponding with the physical act of pressing a button—most likely the stop button on a recording device. Immediately following this, a synthesized, four-note ascending arpeggio plays. This musical motif, composed of bright, bell-like synthetic tones, serves as a distinctive transitional sound effect that marks the end of the introduction and signals the start of the main content. The musical sequence is clean, digitally generated, and free from any ambient noise or artifacts, reinforcing the modern, polished nature of the production. The entire clip is marked by high audio fidelity, with a balanced frequency range, clear speech, and unobtrusive background noise.\n\nIn summary, the audio clip presents a professionally produced introduction to a language-learning segment titled \"Language Takeaway,\" featuring a single male speaker and a clean, modern sound design. The content is designed to be engaging and accessible to a broad, likely non-native English-speaking audience, with the introduction smoothly transitioning into the main lesson through a recognizable musical motif, all within a quiet, high-quality studio environment."
+    },
+    {
+      "start": 115.36,
+      "end": 116.661,
+      "text": " Language Takeaway",
+      "words": [
+        {
+          "word": "Language",
+          "start": 115.36,
+          "end": 115.814,
+          "score": 0.868
+        },
+        {
+          "word": "Takeaway",
+          "start": 115.917,
+          "end": 116.661,
+          "score": 0.869
+        }
+      ],
+      "text_whisper": " Language Takeaway",
+      "text_canary": "Language takeaway.",
+      "text_parakeet": "Language takeaway",
+      "text_ensemble": "Language Takeaway",
+      "language": "en",
+      "demucs": false,
+      "qwen3omni_caption": "The audio clip begins in complete silence, immediately followed by a faint, high-frequency click that signals the activation of a recording device. There is no background noise or environmental sound throughout the recording, indicating a controlled, acoustically neutral setting such as a studio or booth. A single female speaker, with a standard North American English accent, delivers the phrase “Language takeaway” in a clear, professional manner. Her voice is centered, moderately loud, and closely miked, with a mid-to-high pitch, smooth timbre, and crisp articulation. The delivery is neutral and declarative, with a slight upward inflection on “takeaway,” suggesting a title or heading rather than a question. The pronunciation is precise, and there are no filler sounds, hesitations, or nonverbal cues present. Immediately after the final word, the speech ends, and a brief silence follows. The recording then concludes with a subtle, low-frequency click, marking the abrupt stop of the recording device.\n\nIn summary, the audio features a solitary female voice stating the phrase “Language takeaway” in a clean, studio-quality environment, with no additional sounds or distractions. The delivery is clear, neutral, and professionally presented, likely intended as an introductory segment or title for an educational language lesson. The recording is concise, focused, and purposeful, with technical markers at the beginning and end indicating a controlled production setting."
+    },
+    {
+      "start": 118.0,
+      "end": 120.00999999999999,
+      "text": " The first adjective that came up",
+      "words": [
+        {
+          "word": "The",
+          "start": 118.0,
+          "end": 118.06099999999999,
+          "score": 0.561
+        },
+        {
+          "word": "first",
+          "start": 118.102,
+          "end": 118.264,
+          "score": 0.814
+        },
+        {
+          "word": "adjective",
+          "start": 118.30499999999999,
+          "end": 118.77199999999999,
+          "score": 0.49
+        },
+        {
+          "word": "that",
+          "start": 118.812,
+          "end": 118.934,
+          "score": 0.997
+        },
+        {
+          "word": "came",
+          "start": 118.99499999999999,
+          "end": 119.23899999999999,
+          "score": 0.858
+        },
+        {
+          "word": "up",
+          "start": 119.279,
+          "end": 120.00999999999999,
+          "score": 0.879
+        }
+      ],
+      "text_whisper": " The first adjective that came up",
+      "text_canary": "The first adjective that came up was",
+      "text_parakeet": "The first adjective that came up was",
+      "text_ensemble": "The first adjective that came up was",
+      "language": "en",
+      "demucs": false,
+      "qwen3omni_caption": "The audio clip begins with the faint sound of a person exhaling, immediately followed by a single male voice speaking in a clear, neutral, and instructional tone. The speaker says, “the first adjective that came up was,” in a measured, precise manner with no regional accent, suggesting a standardized American English pronunciation. His delivery is deliberate, with the word “first” slightly emphasized, indicating the start of an explanation or a step-by-step process. The phrase trails off, ending with “was,” which is cut off abruptly as the recording stops, leaving the next word or phrase unheard. Throughout, there is a persistent, low-level broadband hiss characteristic of a quiet room with a microphone, and no other sounds—such as breathing, movement, or environmental noise—are present, underscoring the controlled, close-miked nature of the recording. The voice is dry, centered in the stereo field, and features a subtle room reverberation, suggesting a small or medium-sized indoor space with sound-absorbing surfaces. The overall fidelity is high, with no distortion, clipping, or background artifacts, and the frequency range is limited to the midrange, typical of a consumer-grade microphone.\n\nThe context of the speech, especially the instructional tone and use of the word “first,” points to an educational or training scenario, likely involving a group or a digital interface where adjectives are presented or selected. The absence of conversational cues, audience response, or extraneous noise supports the impression of a solo, focused recording meant for demonstration or remote instruction. The speaker’s neutral, professional delivery, absence of filler words, and deliberate pacing reinforce the impression of a prepared, instructional purpose.\n\nIn summary, this audio clip features a single male speaker delivering a clear, neutral, and instructional phrase—“the first adjective that came up was”—in a controlled indoor environment. The recording is high-fidelity, with only a subtle background hiss, and is devoid of any additional sounds or conversational elements. The context and style strongly suggest an educational or training setting, with the speaker likely guiding listeners through a step-by-step process, possibly involving the selection of words or items. The abrupt cut-off leaves the final word of the sentence unknown, reinforcing the impression of a prepared and deliberate instructional segment."
+    }
+  ]
+}
