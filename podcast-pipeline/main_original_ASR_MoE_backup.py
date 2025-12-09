@@ -2,32 +2,9 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-import torch
-
-# Fix for PyTorch 2.6+ weights_only=True default breaking pyannote model loading
-# Patch lightning_fabric's _load function to use weights_only=False
-import lightning_fabric.utilities.cloud_io as cloud_io
-from pathlib import Path
-from typing import Union, IO, Any
-
-_original_load = cloud_io._load
-
-def _patched_load(path_or_url: Union[IO, str, Path], map_location=None) -> Any:
-    """Patched version of lightning_fabric's _load that uses weights_only=False for pyannote compatibility"""
-    if not isinstance(path_or_url, (str, Path)):
-        return torch.load(path_or_url, map_location=map_location, weights_only=False)
-
-    if str(path_or_url).startswith("http"):
-        return torch.hub.load_state_dict_from_url(str(path_or_url), map_location=map_location)
-
-    from lightning_fabric.utilities.cloud_io import get_filesystem
-    fs = get_filesystem(path_or_url)
-    with fs.open(path_or_url, "rb") as f:
-        return torch.load(f, map_location=map_location, weights_only=False)
-
-cloud_io._load = _patched_load
-
-# Continue with other imports
+##################################
+# CREDENTIAL 
+##################################
 import argparse
 import json
 import librosa
@@ -41,8 +18,17 @@ import re
 import warnings
 import tempfile
 from openai import OpenAI
-
+import torch
 import requests
+from pyannote.audio.core.task import Specifications, Problem, Resolution
+
+# 기존에 작성하신 TorchVersion 외에 pyannote 관련 클래스들도 추가합니다.
+torch.serialization.add_safe_globals([
+    torch.torch_version.TorchVersion,
+    Specifications, 
+    Problem, 
+    Resolution
+])
 from pydub import AudioSegment
 import os
 from tritony import InferenceClient
@@ -53,7 +39,6 @@ import pandas as pd
 #from prompt import DIAR_PROMPT, WEAK_DIAR_PROMPT, NEW_DIAR_PROMPT, SPK_SUMMERIZE_PROMPT, NEW_DIAR_PROMPT_with_spk_inform, DIAR_PROMPT_KO
 from utils.tool import (
     export_to_mp3,
-    export_to_mp3_new,
     load_cfg,
     get_audio_files,
     detect_gpu,
@@ -599,370 +584,8 @@ def cut_by_speaker_label(vad_list):
 
     return filter_list
 
-@time_logger
-def detect_overlapping_segments(segment_list, overlap_threshold=1.0):
-    """
-    Detect segments that overlap for more than overlap_threshold seconds.
-
-    Args:
-        segment_list (list): List of segments with 'start', 'end', and 'speaker' keys
-        overlap_threshold (float): Minimum overlap duration in seconds to be considered
-
-    Returns:
-        list: List of overlapping segment pairs with overlap info
-            [{'seg1': segment1, 'seg2': segment2, 'overlap_start': float, 'overlap_end': float, 'overlap_duration': float}]
-    """
-    overlapping_pairs = []
-
-    # Sort segments by start time
-    sorted_segments = sorted(segment_list, key=lambda x: x['start'])
-
-    for i in range(len(sorted_segments)):
-        for j in range(i + 1, len(sorted_segments)):
-            seg1 = sorted_segments[i]
-            seg2 = sorted_segments[j]
-
-            # If seg2 starts after seg1 ends, no more overlaps possible for seg1
-            if seg2['start'] >= seg1['end']:
-                break
-
-            # Calculate overlap
-            overlap_start = max(seg1['start'], seg2['start'])
-            overlap_end = min(seg1['end'], seg2['end'])
-            overlap_duration = overlap_end - overlap_start
-
-            # Check if overlap exceeds threshold
-            if overlap_duration >= overlap_threshold:
-                overlapping_pairs.append({
-                    'seg1': seg1,
-                    'seg2': seg2,
-                    'overlap_start': overlap_start,
-                    'overlap_end': overlap_end,
-                    'overlap_duration': overlap_duration
-                })
-                logger.info(f"Overlap detected: {overlap_duration:.2f}s between "
-                           f"[{seg1['start']:.2f}-{seg1['end']:.2f}] and "
-                           f"[{seg2['start']:.2f}-{seg2['end']:.2f}]")
-
-    return overlapping_pairs
-
-
-@time_logger
-def separate_audio_with_sepreformer(audio_segment, sample_rate, sepreformer_path):
-    """
-    Use SepReformer to separate overlapping audio into two speaker streams.
-
-    Args:
-        audio_segment (np.ndarray): Audio segment with overlapping speakers
-        sample_rate (int): Sample rate of the audio
-        sepreformer_path (str): Path to SepReformer model directory
-
-    Returns:
-        tuple: (separated_audio_1, separated_audio_2) as numpy arrays
-    """
-    import sys
-    import tempfile
-    import importlib
-
-    # Store original sys.path to restore later
-    original_sys_path = sys.path.copy()
-
-    try:
-        # CRITICAL: The main script already imports 'models' and 'utils' packages, which conflict with SepReformer's
-        # Solution: Temporarily manipulate sys.path and sys.modules to load SepReformer's packages
-
-        # Save the current 'models' and 'utils' modules if they exist
-        original_models = sys.modules.get('models', None)
-        original_utils = sys.modules.get('utils', None)
-
-        # Remove podcast-pipeline from sys.path temporarily to avoid conflicts with utils package
-        podcast_pipeline_path = os.path.dirname(os.path.abspath(__file__))
-        paths_to_remove = [p for p in sys.path if podcast_pipeline_path in p]
-        for path in paths_to_remove:
-            sys.path.remove(path)
-
-        # Add SepReformer to path (must be at the beginning)
-        sepreformer_parent = sepreformer_path
-        if sepreformer_parent not in sys.path:
-            sys.path.insert(0, sepreformer_parent)
-
-        # Clear all related modules from sys.modules to force reload from SepReformer
-        modules_to_clear = [key for key in sys.modules.keys() if key.startswith('models.') or key.startswith('utils.') or key in ['models', 'utils']]
-        cleared_modules = {}
-        for module_name in modules_to_clear:
-            cleared_modules[module_name] = sys.modules[module_name]
-            del sys.modules[module_name]
-
-        # Now import from SepReformer's models package
-        from models.SepReformer_Base_WSJ0.model import Model
-        import yaml
-
-        # Restore the original modules (but keep Model class reference)
-        for module_name, module_obj in cleared_modules.items():
-            sys.modules[module_name] = module_obj
-
-        # Create temporary file for input audio
-        temp_dir = tempfile.mkdtemp(prefix="sepreformer_")
-        temp_input = os.path.join(temp_dir, "mixture.wav")
-
-        # Resample to 8kHz if needed (SepReformer WSJ0 model expects 8kHz)
-        if sample_rate != 8000:
-            audio_8k = librosa.resample(audio_segment, orig_sr=sample_rate, target_sr=8000)
-        else:
-            audio_8k = audio_segment
-
-        # Save temporary input file
-        sf.write(temp_input, audio_8k, 8000)
-
-        # Load SepReformer config
-        config_path = os.path.join(sepreformer_path, "models/SepReformer_Base_WSJ0/configs.yaml")
-        with open(config_path, 'r') as f:
-            yaml_dict = yaml.safe_load(f)
-        config = yaml_dict["config"]
-
-        # Load model
-        model = Model(**config["model"])
-
-        # Load checkpoint
-        checkpoint_dir = os.path.join(sepreformer_path, "models/SepReformer_Base_WSJ0/log/pretrain_weights")
-        if not os.path.exists(checkpoint_dir) or not os.listdir(checkpoint_dir):
-            # Try scratch_weights if pretrain_weights is empty
-            checkpoint_dir = os.path.join(sepreformer_path, "models/SepReformer_Base_WSJ0/log/scratch_weights")
-
-        checkpoint_files = [f for f in os.listdir(checkpoint_dir) if f.endswith(('.pt', '.pth'))]
-
-        if not checkpoint_files:
-            raise FileNotFoundError(f"No checkpoint found in {checkpoint_dir}")
-
-        checkpoint_path = os.path.join(checkpoint_dir, checkpoint_files[-1])  # Use latest checkpoint
-        checkpoint = torch.load(checkpoint_path, map_location=device)
-        model.load_state_dict(checkpoint['model_state_dict'])
-        model = model.to(device)
-        model.eval()
-
-        # Load and process audio
-        mixture, _ = librosa.load(temp_input, sr=8000)
-        mixture_tensor = torch.tensor(mixture, dtype=torch.float32).unsqueeze(0)
-
-        # Padding
-        stride = config["model"]["module_audio_enc"]["stride"]
-        remains = mixture_tensor.shape[-1] % stride
-        if remains != 0:
-            padding = stride - remains
-            mixture_padded = torch.nn.functional.pad(mixture_tensor, (0, padding), "constant", 0)
-        else:
-            mixture_padded = mixture_tensor
-
-        # Inference
-        with torch.inference_mode():
-            nnet_input = mixture_padded.to(device)
-            estim_src, _ = model(nnet_input)
-
-            # Extract separated sources
-            src1 = estim_src[0][..., :mixture_tensor.shape[-1]].squeeze().cpu().numpy()
-            src2 = estim_src[1][..., :mixture_tensor.shape[-1]].squeeze().cpu().numpy()
-
-        # Resample back to original sample rate if needed
-        if sample_rate != 8000:
-            src1 = librosa.resample(src1, orig_sr=8000, target_sr=sample_rate)
-            src2 = librosa.resample(src2, orig_sr=8000, target_sr=sample_rate)
-
-        # Cleanup
-        shutil.rmtree(temp_dir, ignore_errors=True)
-
-        logger.info(f"SepReformer separation completed: output shapes {src1.shape}, {src2.shape}")
-        return src1, src2
-
-    except Exception as e:
-        logger.error(f"SepReformer separation failed: {e}")
-        import traceback
-        logger.error(f"Traceback: {traceback.format_exc()}")
-        # Return original audio duplicated as fallback
-        return audio_segment, audio_segment
-    finally:
-        # Cleanup: Restore original sys.path
-        if 'original_sys_path' in locals():
-            sys.path = original_sys_path
-
-
-@time_logger
-def identify_speaker_with_embedding(audio_segment, sample_rate, reference_embeddings, speaker_labels):
-    """
-    Identify which speaker an audio segment belongs to using speaker embeddings.
-
-    Args:
-        audio_segment (np.ndarray): Audio segment to identify
-        sample_rate (int): Sample rate of the audio
-        reference_embeddings (dict): Dictionary of {speaker_label: embedding_tensor}
-        speaker_labels (list): List of possible speaker labels
-
-    Returns:
-        str: Identified speaker label
-    """
-    from pyannote.audio import Model
-    from pyannote.audio.pipelines.utils import get_model
-
-    # Use pyannote speaker embedding model
-    embedding_model = Model.from_pretrained("pyannote/embedding", use_auth_token=cfg["huggingface_token"])
-    embedding_model = embedding_model.to(device)
-
-    # Extract embedding from audio segment
-    # Resample to 16kHz if needed (pyannote expects 16kHz)
-    if sample_rate != 16000:
-        audio_16k = librosa.resample(audio_segment, orig_sr=sample_rate, target_sr=16000)
-    else:
-        audio_16k = audio_segment
-
-    # Convert to tensor
-    audio_tensor = torch.tensor(audio_16k, dtype=torch.float32).unsqueeze(0).to(device)
-
-    # Extract embedding
-    with torch.inference_mode():
-        embedding = embedding_model(audio_tensor)
-
-    # Compare with reference embeddings using cosine similarity
-    best_speaker = None
-    best_similarity = -1.0
-
-    for speaker_label in speaker_labels:
-        if speaker_label in reference_embeddings:
-            ref_embedding = reference_embeddings[speaker_label]
-            # Cosine similarity
-            similarity = torch.nn.functional.cosine_similarity(
-                embedding.mean(dim=1),
-                ref_embedding.mean(dim=1),
-                dim=0
-            ).item()
-
-            if similarity > best_similarity:
-                best_similarity = similarity
-                best_speaker = speaker_label
-
-    logger.debug(f"Speaker identification: {best_speaker} (similarity: {best_similarity:.3f})")
-    return best_speaker
-
-
-@time_logger
-def process_overlapping_segments_with_separation(segment_list, audio, overlap_threshold=1.0,
-                                                 sepreformer_path="/mnt/ddn/kyudan/Audio-data-centric/SepReformer"):
-    """
-    Process overlapping segments by separating them with SepReformer.
-    Stores the separated/enhanced audio directly into each segment dictionary.
-    """
-    logger.info(f"Processing overlapping segments with SepReformer (threshold: {overlap_threshold}s)")
-
-    # 1. 모든 세그먼트에 대해 초기 'enhanced_audio'를 원본 오디오로 초기화
-    # 이렇게 해야 겹치지 않는 부분(A, C)도 데이터가 존재하게 됩니다.
-    waveform = audio["waveform"]
-    sample_rate = audio["sample_rate"]
-    
-    for seg in segment_list:
-        start_frame = int(seg['start'] * sample_rate)
-        end_frame = int(seg['end'] * sample_rate)
-        # 원본 오디오 복사 (numpy array)
-        seg['enhanced_audio'] = waveform[start_frame:end_frame].copy()
-
-    # Detect overlapping segments
-    overlapping_pairs = detect_overlapping_segments(segment_list, overlap_threshold)
-
-    if not overlapping_pairs:
-        logger.info("No overlapping segments found")
-        return audio, segment_list
-
-    logger.info(f"Found {len(overlapping_pairs)} overlapping segment pairs")
-
-    # (Reference Embeddings 추출 로직은 기존과 동일하므로 생략하거나 그대로 유지)
-    from pyannote.audio import Model as PyannoteModel
-    embedding_model = PyannoteModel.from_pretrained("pyannote/embedding", use_auth_token=cfg["huggingface_token"])
-    embedding_model = embedding_model.to(device)
-
-    reference_embeddings = {}
-    all_speakers = list(set([seg['speaker'] for seg in segment_list]))
-
-    # ... (Reference Embedding 추출 기존 코드 그대로 사용) ...
-    for speaker in all_speakers:
-        speaker_segments = [seg for seg in segment_list if seg['speaker'] == speaker]
-        for seg in speaker_segments:
-            is_overlapping = any(pair['seg1'] == seg or pair['seg2'] == seg for pair in overlapping_pairs)
-            if not is_overlapping and (seg['end'] - seg['start']) >= 2.0:
-                start_frame = int(seg['start'] * sample_rate)
-                end_frame = int(seg['end'] * sample_rate)
-                seg_audio = waveform[start_frame:end_frame]
-                if sample_rate != 16000:
-                    seg_audio_16k = librosa.resample(seg_audio, orig_sr=sample_rate, target_sr=16000)
-                else:
-                    seg_audio_16k = seg_audio
-                seg_tensor = torch.tensor(seg_audio_16k, dtype=torch.float32).unsqueeze(0).to(device)
-                with torch.inference_mode():
-                    embedding = embedding_model(seg_tensor)
-                reference_embeddings[speaker] = embedding
-                break
-
-    # 2. Process overlap pairs and update INDIVIDUAL segment audio
-    for pair_idx, pair in enumerate(overlapping_pairs):
-        overlap_start = pair['overlap_start']
-        overlap_end = pair['overlap_end']
-        seg1 = pair['seg1']
-        seg2 = pair['seg2']
-        
-        seg1_speaker = seg1['speaker']
-        seg2_speaker = seg2['speaker']
-
-        logger.info(f"Processing overlap {pair_idx+1}/{len(overlapping_pairs)}: "
-                    f"{overlap_start:.2f}s - {overlap_end:.2f}s ({seg1_speaker} vs {seg2_speaker})")
-
-        # Extract overlapping audio from global waveform
-        start_frame = int(overlap_start * sample_rate)
-        end_frame = int(overlap_end * sample_rate)
-        overlap_audio = waveform[start_frame:end_frame]
-
-        # Separate with SepReformer
-        separated_src1, separated_src2 = separate_audio_with_sepreformer(
-            overlap_audio, sample_rate, sepreformer_path
-        )
-
-        # Identify speakers
-        speaker1_identity = identify_speaker_with_embedding(
-            separated_src1, sample_rate, reference_embeddings, [seg1_speaker, seg2_speaker]
-        )
-        # speaker2_identity 로직... (기존 동일)
-
-        # Assign separated sources
-        if speaker1_identity == seg1_speaker:
-            seg1_part = separated_src1
-            seg2_part = separated_src2
-        else:
-            seg1_part = separated_src2
-            seg2_part = separated_src1
-
-        # CRITICAL FIX: Update the specific segment's audio buffer, NOT the global waveform
-        
-        # 1) Seg1 업데이트 (겹치는 부분만 교체)
-        seg1_start_global = int(seg1['start'] * sample_rate)
-        # seg1 내부에서의 겹치는 구간 시작점 계산 (Relative Index)
-        rel_start_1 = start_frame - seg1_start_global
-        rel_end_1 = rel_start_1 + len(seg1_part)
-        
-        # 배열 길이 안전장치 (Floating point 오차 대비)
-        limit_len_1 = min(len(seg1_part), len(seg1['enhanced_audio'][rel_start_1:]))
-        if limit_len_1 > 0:
-            seg1['enhanced_audio'][rel_start_1 : rel_start_1 + limit_len_1] = seg1_part[:limit_len_1]
-
-        # 2) Seg2 업데이트 (겹치는 부분만 교체)
-        seg2_start_global = int(seg2['start'] * sample_rate)
-        # seg2 내부에서의 겹치는 구간 시작점 계산 (Relative Index)
-        rel_start_2 = start_frame - seg2_start_global
-        rel_end_2 = rel_start_2 + len(seg2_part)
-
-        limit_len_2 = min(len(seg2_part), len(seg2['enhanced_audio'][rel_start_2:]))
-        if limit_len_2 > 0:
-            seg2['enhanced_audio'][rel_start_2 : rel_start_2 + limit_len_2] = seg2_part[:limit_len_2]
-
-        logger.info(f"Merged separated audio into individual segments for overlap {pair_idx+1}")
-
-    # Note: We return the original audio dict because we modified the segments list in-place
-    # The 'enhanced_audio' inside segments now holds the clean data.
-    return audio, segment_list
+def speaker_sepreformer():
+    pass
 
 
 @time_logger
@@ -1069,8 +692,17 @@ def asr(vad_segments, audio):
 @time_logger
 def asr_MoE(vad_segments, audio, segment_demucs_flags=None, enable_word_timestamps=False, device="cuda"):
     """
-    Perform Automatic Speech Recognition (ASR) on the VAD segments using MoE (Whisper + Parakeet + Canary).
-    Prioritizes 'enhanced_audio' (SepReformer output) if available.
+    Perform Automatic Speech Recognition (ASR) on the VAD segments of the given audio.
+
+    Args:
+        vad_segments (list): List of VAD segments with start and end times.
+        audio (dict): A dictionary containing the audio waveform and sample rate.
+        segment_demucs_flags (list): List of booleans indicating which segments had demucs applied.
+        enable_word_timestamps (bool): Whether to enable WhisperX word-level timestamp alignment.
+        device (str): Device to use for alignment ("cuda" or "cpu").
+
+    Returns:
+        tuple: (list of ASR results, whisper processing time in seconds, alignment time in seconds)
     """
     if len(vad_segments) == 0:
         return [], 0.0, 0.0
@@ -1078,163 +710,195 @@ def asr_MoE(vad_segments, audio, segment_demucs_flags=None, enable_word_timestam
     if segment_demucs_flags is None:
         segment_demucs_flags = [False] * len(vad_segments)
 
-    # 전체 오디오 준비 (Fallback 용)
-    full_waveform = audio["waveform"]
-    global_sample_rate = audio["sample_rate"]
-    
-    # 결과 담을 리스트
-    final_results = []
-    
-    total_whisper_time = 0.0
-    total_alignment_time = 0.0
-    
-    rover = RoverEnsembler()
+    temp_audio = audio["waveform"]
+    start_time = vad_segments[0]["start"]
+    end_time = vad_segments[-1]["end"]
+    start_frame = int(start_time * audio["sample_rate"])
+    end_frame = int(end_time * audio["sample_rate"])
+    temp_audio = temp_audio[start_frame:end_frame]  # remove silent start and end
 
-    # -------------------------------------------------------------------------
-    # Loop through each VAD segment individually
-    # -------------------------------------------------------------------------
+    # update vad_segments start and end time (this is a little trick for batched asr:)
     for idx, segment in enumerate(vad_segments):
-        start_time = segment["start"]
-        end_time = segment["end"]
-        speaker = segment.get("speaker", "Unknown")
-        
-        # 1. 오디오 준비 (enhanced_audio 우선 사용)
-        segment_audio = None
-        is_enhanced = False
+        vad_segments[idx]["start"] -= start_time
+        vad_segments[idx]["end"] -= start_time
 
-        if "enhanced_audio" in segment:
-            # SepReformer로 분리된 오디오가 있는 경우
-            logger.debug(f"Processing segment {idx}: Using SepReformer ENHANCED audio")
-            raw_audio = segment["enhanced_audio"]
-            is_enhanced = True
-        else:
-            # 없는 경우 원본에서 자르기
-            start_frame = int(start_time * global_sample_rate)
-            end_frame = int(end_time * global_sample_rate)
-            raw_audio = full_waveform[start_frame:end_frame]
-        
-        # 16kHz 리샘플링 (ASR 모델용)
-        if global_sample_rate != 16000:
-            # librosa는 float32 numpy array를 기대
-            segment_audio_16k = librosa.resample(raw_audio, orig_sr=global_sample_rate, target_sr=16000)
-        else:
-            segment_audio_16k = raw_audio
+    # resample to 16k
+    temp_audio = librosa.resample(
+        temp_audio, orig_sr=audio["sample_rate"], target_sr=16000
+    )
 
-        # 오디오 길이가 너무 짧으면 스킵
-        if len(segment_audio_16k) < 160: # 0.01초 미만
-            continue
+    if multilingual_flag:
+        logger.debug("Multilingual flag is on")
+        valid_vad_segments, valid_vad_segments_language = [], []
+        # get valid segments to be transcripted
+        for idx, segment in enumerate(vad_segments):
+            start_frame = int(segment["start"] * 16000)
+            end_frame = int(segment["end"] * 16000)
+            segment_audio = temp_audio[start_frame:end_frame]
+            language, prob = asr_model.detect_language(segment_audio)
+            # 1. if language is in supported list, 2. if prob > 0.8
+            if language in supported_languages and prob > 0.8:
+                valid_vad_segments.append(vad_segments[idx])
+                valid_vad_segments_language.append(language)
 
-        # ---------------------------------------------------------------------
-        # 2. Whisper Transcription
-        # ---------------------------------------------------------------------
-        whisper_start = time.time()
-        
-        # 개별 세그먼트에 대해 transcribe 수행
-        # 주의: asr_model.transcribe가 단일 오디오 배열을 받을 수 있도록 구현되어 있어야 함 (faster_whisper 기반 가정)
-        try:
-            # word_timestamps=True인 경우 정렬을 위해 전체 오디오가 필요할 수 있으나, 
-            # 분리된 오디오의 경우 해당 조각만 넘겨야 정확함.
-            transcribe_result = asr_model.transcribe(
-                segment_audio_16k, 
-                batch_size=1, # 개별 처리이므로
-                print_progress=False
+        # if no valid segment, return empty
+        if len(valid_vad_segments) == 0:
+            return [], 0.0, 0.0
+        all_transcribe_result = []
+        total_whisper_time = 0.0
+        total_alignment_time = 0.0
+        logger.debug(f"valid_vad_segments_language: {valid_vad_segments_language}")
+        unique_languages = list(set(valid_vad_segments_language))
+        logger.debug(f"unique_languages: {unique_languages}")
+        # process each language one by one
+        for language_token in unique_languages:
+            language = language_token
+            # filter out segments with different language
+            vad_segments = [
+                valid_vad_segments[i]
+                for i, x in enumerate(valid_vad_segments_language)
+                if x == language
+            ]
+            # bacthed trascription
+            whisper_start_time = time.time()
+            transcribe_result_temp = asr_model.transcribe(
+                temp_audio,
+                vad_segments,
+                batch_size=batch_size,
+                language=language,
+                print_progress=True,
             )
-            
-            # Whisper 결과 파싱
-            if transcribe_result and "segments" in transcribe_result and len(transcribe_result["segments"]) > 0:
-                # Whisper가 세그먼트 내부를 또 쪼갰을 수 있으므로 합치거나 첫 번째 것 사용
-                # 여기서는 텍스트를 모두 합치는 방식으로 처리
-                text_whisper = " ".join([s["text"] for s in transcribe_result["segments"]]).strip()
-                detected_language = transcribe_result.get("language", "en")
-                
-                # Word timestamp가 있다면 가져오기 (첫 번째 세그먼트 기준 혹은 재조정 필요)
-                words = []
-                if enable_word_timestamps:
-                     for s in transcribe_result["segments"]:
-                         if "words" in s:
-                             words.extend(s["words"])
-            else:
-                text_whisper = ""
-                detected_language = "en"
-                words = []
+            whisper_end_time = time.time()
+            whisper_time = whisper_end_time - whisper_start_time
+            total_whisper_time += whisper_time
+            result = transcribe_result_temp["segments"]
 
-        except Exception as e:
-            logger.error(f"Whisper processing failed for segment {idx}: {e}")
-            text_whisper = ""
-            detected_language = "en"
-            words = []
+            # WhisperX alignment for word-level timestamps
+            if enable_word_timestamps:
+                logger.info(f"Performing WhisperX alignment for language: {language}")
+                alignment_start = time.time()
+                aligned_result = asr_model.align_segments(
+                    result,
+                    temp_audio,
+                    language,
+                    device=device
+                )
+                alignment_end = time.time()
+                alignment_time = alignment_end - alignment_start
+                total_alignment_time += alignment_time
+                result = aligned_result.get("segments", result)
+                logger.info(f"Alignment completed in {alignment_time:.2f}s")
 
-        whisper_end = time.time()
-        total_whisper_time += (whisper_end - whisper_start)
+            # restore the segment annotation
+            for idx, segment in enumerate(result):
+                result[idx]["start"] += start_time
+                result[idx]["end"] += start_time
+                result[idx]["language"] = transcribe_result_temp["language"]
+                # Add speaker information from vad_segments
+                if idx < len(vad_segments) and "speaker" in vad_segments[idx]:
+                    result[idx]["speaker"] = vad_segments[idx]["speaker"]
+                # Adjust word timestamps if present
+                if enable_word_timestamps and "words" in result[idx]:
+                    for word in result[idx]["words"]:
+                        word["start"] += start_time
+                        word["end"] += start_time
+            all_transcribe_result.extend(result)
+        # sort by start time
+        all_transcribe_result = sorted(all_transcribe_result, key=lambda x: x["start"])
+        return all_transcribe_result, total_whisper_time, total_alignment_time
+    else:
+        logger.debug("Multilingual flag is off")
+        language, prob = asr_model.detect_language(temp_audio)
+        logger.info(f"Detected language: {language} with probability: {prob}")
+        logger.info(f"Supported languages: {supported_languages}")
+        if language in supported_languages and prob > 0.8:
+            # Whisper transcription
+            whisper_start_time = time.time()
+            transcribe_result = asr_model.transcribe(
+                temp_audio,
+                vad_segments,
+                batch_size=batch_size,
+                language=language,
+                task="transcribe",
+                print_progress=True,
+            )
+            whisper_end_time = time.time()
+            whisper_time = whisper_end_time - whisper_start_time
 
-        # ---------------------------------------------------------------------
-        # 3. Parakeet Transcription
-        # ---------------------------------------------------------------------
-        try:
-            # asr_model_2.transcribe 구현에 따라 다름 (보통 list of audio를 받음)
-            p_res = asr_model_2.transcribe([segment_audio_16k])
-            text_parakeet = p_res[0] if p_res else ""
-        except Exception as e:
-            logger.error(f"Parakeet failed: {e}")
-            text_parakeet = ""
+            # Build result with both Whisper, Parakeet, and Canary outputs
+            result = transcribe_result["segments"]
 
-        # ---------------------------------------------------------------------
-        # 4. Canary Transcription
-        # ---------------------------------------------------------------------
-        try:
-            # 임시 파일 저장 (Canary 입력용)
-            with tempfile.NamedTemporaryFile(suffix=".wav", delete=True) as temp_wav:
-                sf.write(temp_wav.name, segment_audio_16k, 16000)
-                
+            # WhisperX alignment for word-level timestamps
+            alignment_time = 0.0
+            if enable_word_timestamps:
+                logger.info(f"Performing WhisperX alignment for language: {language}")
+                alignment_start = time.time()
+                aligned_result = asr_model.align_segments(
+                    result,
+                    temp_audio,
+                    language,
+                    device=device
+                )
+                alignment_end = time.time()
+                alignment_time = alignment_end - alignment_start
+                result = aligned_result.get("segments", result)
+                logger.info(f"Alignment completed in {alignment_time:.2f}s")
+
+            rover = RoverEnsembler()
+
+            for idx, segment in enumerate(result):
+                # Extract segment audio for Parakeet and Canary
+                seg_start_frame = int(segment["start"] * 16000)
+                seg_end_frame = int(segment["end"] * 16000)
+                segment_audio = temp_audio[seg_start_frame:seg_end_frame]
+
+                # Parakeet transcription for this segment
+                transcribe_result_parakeet = asr_model_2.transcribe(segment_audio)
+                result_parakeet = transcribe_result_parakeet[0].text if transcribe_result_parakeet else ""
+
+                # Canary transcription for this segment
+                # Save segment audio to temporary file for Canary
+                temp_wav_path = f"/tmp/temp_segment_{idx}.wav"
+                import soundfile as sf
+                sf.write(temp_wav_path, segment_audio, 16000)
+
                 answer_ids = canary_model.generate(
                     prompts=[
-                        [{"role": "user", "content": f"Transcribe the following: {canary_model.audio_locator_tag}", "audio": [temp_wav.name]}]
+                        [{"role": "user", "content": f"Transcribe the following: {canary_model.audio_locator_tag}", "audio": [temp_wav_path]}]
                     ],
                     max_new_tokens=128,
                 )
-                text_canary = canary_model.tokenizer.ids_to_text(answer_ids[0].cpu())
-        except Exception as e:
-            logger.error(f"Canary failed: {e}")
-            text_canary = ""
+                result_canary = canary_model.tokenizer.ids_to_text(answer_ids[0].cpu())
 
-        # ---------------------------------------------------------------------
-        # 5. ROVER Ensemble
-        # ---------------------------------------------------------------------
-        text_ensemble = rover.align_and_vote([text_whisper, text_canary, text_parakeet])
+                # Clean up temporary file
+                import os
+                os.remove(temp_wav_path)
 
-        # ---------------------------------------------------------------------
-        # 6. Result Construction
-        # ---------------------------------------------------------------------
-        seg_result = {
-            "start": start_time,
-            "end": end_time,
-            "text": text_ensemble, # 최종 앙상블 텍스트
-            "text_whisper": text_whisper,
-            "text_parakeet": text_parakeet,
-            "text_canary": text_canary,
-            "speaker": speaker,
-            "language": detected_language,
-            "demucs": segment_demucs_flags[idx] if idx < len(segment_demucs_flags) else False,
-            "is_separated": is_enhanced # 분리된 오디오 사용 여부 기록
-        }
-        
-        # 분리된 오디오 데이터도 결과에 포함 (Export를 위해)
-        if is_enhanced:
-            seg_result["enhanced_audio"] = raw_audio
+                # ROVER ensemble: combine whisper, canary, parakeet
+                text_whisper = segment["text"]
+                ensembled_text = rover.align_and_vote([text_whisper, result_canary, result_parakeet])
 
-        if enable_word_timestamps and words:
-            # Word timestamp는 상대 시간이므로 절대 시간으로 보정
-            for w in words:
-                w["start"] += start_time
-                w["end"] += start_time
-            seg_result["words"] = words
-            
-            # (옵션) WhisperX Alignment가 필요하다면 여기서 개별 수행
-            # 하지만 이미 분리된 오디오라 whisper word timestamp로도 충분할 수 있음
-
-        final_results.append(seg_result)
-
-    return final_results, total_whisper_time, total_alignment_time
+                # Update result with all model outputs
+                result[idx]["text_whisper"] = text_whisper
+                result[idx]["text_canary"] = result_canary
+                result[idx]["text_parakeet"] = result_parakeet
+                result[idx]["text_ensemble"] = ensembled_text  # ROVER ensembled result
+                result[idx]["start"] += start_time
+                result[idx]["end"] += start_time
+                result[idx]["language"] = transcribe_result["language"]
+                # Add speaker information from vad_segments
+                if idx < len(vad_segments) and "speaker" in vad_segments[idx]:
+                    result[idx]["speaker"] = vad_segments[idx]["speaker"]
+                # Add demucs flag from preprocessing
+                result[idx]["demucs"] = segment_demucs_flags[idx] if idx < len(segment_demucs_flags) else False
+                # Adjust word timestamps if present
+                if enable_word_timestamps and "words" in result[idx]:
+                    for word in result[idx]["words"]:
+                        word["start"] += start_time
+                        word["end"] += start_time
+            return result, whisper_time, alignment_time
+        else:
+            return [], 0.0, 0.0
 
 def add_qwen3omni_caption(filtered_list, audio, save_path):
     """
@@ -1814,9 +1478,7 @@ def ko_process_json(input_list: str) -> None:
 def main_process(audio_path, save_path=None, audio_name=None,
                  do_vad = False,
                  LLM = "",
-                 use_demucs = False,
-                 use_sepreformer = False,
-                 overlap_threshold = 1.0):
+                 use_demucs = False):
 
     if not audio_path.endswith((".mp3", ".wav", ".flac", ".m4a", ".aac")):
         logger.warning(f"Unsupported file type: {audio_path}")
@@ -1883,25 +1545,7 @@ def main_process(audio_path, save_path=None, audio_name=None,
     segment_list = split_long_segments(segment_list)
     ######################
 
-    # Step 2.5: Overlap control using SepReformer
-    logger.info("Step 2.5: Overlap Control with SepReformer")
-    separation_time = 0.0
-    if use_sepreformer:
-        separation_start = time.time()
-        audio, segment_list = process_overlapping_segments_with_separation(
-            segment_list,
-            audio,
-            overlap_threshold=overlap_threshold,
-            sepreformer_path="/mnt/ddn/kyudan/Audio-data-centric/SepReformer"
-        )
-        separation_end = time.time()
-        separation_time = separation_end - separation_start
-
-        # Calculate SepReformer RT factor
-        separation_rt = separation_time / audio_duration if audio_duration > 0 else 0
-        logger.info(f"SepReformer separation - Processing time: {separation_time:.2f}s, RT factor: {separation_rt:.4f}")
-    else:
-        logger.info("SepReformer overlap separation skipped (flag disabled)")
+    # Overlap control : Using SepReformer
 
 
 
@@ -2012,11 +1656,6 @@ def main_process(audio_path, save_path=None, audio_name=None,
     print(f"  - Processing time: {dia_time:.2f} seconds")
     print(f"  - RT factor: {vad_sortformer_rt:.4f}")
     print(f"{'='*60}")
-    if use_sepreformer:
-        print(f"SepReformer Overlap Separation:")
-        print(f"  - Processing time: {separation_time:.2f} seconds")
-        print(f"  - RT factor: {separation_rt:.4f}")
-        print(f"{'='*60}")
     print(f"Whisper large v3:")
     print(f"  - Processing time: {asr_time:.2f} seconds")
     print(f"  - RT factor: {whisper_rt:.4f}")
@@ -2035,7 +1674,7 @@ def main_process(audio_path, save_path=None, audio_name=None,
 
     logger.info("Step 5: Write result into MP3 and JSON file")
     print(f"Exporting {len(filtered_list)} segments to MP3 and JSON...")
-    export_to_mp3_new(audio, filtered_list, save_path, audio_name)
+    export_to_mp3(audio, filtered_list, save_path, audio_name)
 
 
     # 한국어 g2p 후처리
@@ -2073,15 +1712,6 @@ def main_process(audio_path, save_path=None, audio_name=None,
         output_data["metadata"]["qwen3omni_caption"] = {
             "processing_time_seconds": caption_time,
             "rt_factor": caption_rt,
-            "enabled": True
-        }
-
-    # Add SepReformer separation metadata if enabled
-    if use_sepreformer:
-        output_data["metadata"]["sepreformer_separation"] = {
-            "processing_time_seconds": separation_time,
-            "rt_factor": separation_rt,
-            "overlap_threshold_seconds": overlap_threshold,
             "enabled": True
         }
 
@@ -2219,20 +1849,6 @@ if __name__ == "__main__":
         action=argparse.BooleanOptionalAction,
         default=False,
         help="Enable Qwen3-Omni audio captioning for each segment",
-    )
-
-    parser.add_argument(
-        "--sepreformer",
-        action=argparse.BooleanOptionalAction,
-        default=False,
-        help="Enable SepReformer for overlapping speech separation",
-    )
-
-    parser.add_argument(
-        "--overlap_threshold",
-        type=float,
-        default=1.0,
-        help="Minimum overlap duration in seconds to trigger SepReformer separation",
     )
 
 
@@ -2419,7 +2035,6 @@ if __name__ == "__main__":
     #         continue  # 폴더가 존재하면 다음 오디오 파일로 넘어갑니다.
 
 
-        main_process(path, do_vad=args.vad, LLM=args.LLM, use_demucs=args.demucs,
-                     use_sepreformer=args.sepreformer, overlap_threshold=args.overlap_threshold)
+        main_process(path, do_vad=args.vad, LLM=args.LLM, use_demucs=args.demucs)
 end_time = time.time()
 print("Total time:", end_time - start_time)

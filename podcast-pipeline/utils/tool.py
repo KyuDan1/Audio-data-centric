@@ -222,6 +222,64 @@ def export_to_mp3(audio, asr_result, folder_path, file_name):
         ):
             future.result()
 
+@time_logger
+def export_to_mp3_new(audio, asr_result, folder_path, file_name):
+    """Export segmented audio to MP3 files."""
+    sr = audio["sample_rate"]
+    # 원본 전체 웨이브폼 (Fallback용)
+    full_waveform = audio["waveform"]
+
+    os.makedirs(folder_path, exist_ok=True)
+
+    # Function to process each segment in a separate thread
+    def process_segment(idx, segment):
+        split_audio = None
+        
+        # 1. 분리된(enhanced) 오디오가 있는지 확인
+        # (SepReformer를 거친 오버랩 구간은 이 데이터가 존재함)
+        if "enhanced_audio" in segment and segment["enhanced_audio"] is not None:
+            # 이미 분리된 오디오 데이터(numpy array)를 사용
+            split_audio = segment["enhanced_audio"]
+        else:
+            # 2. 없다면 기존 방식대로 원본에서 시간으로 잘라내기
+            start = int(segment["start"] * sr)
+            end = int(segment["end"] * sr)
+            
+            # 인덱스 에러 방지 (끝부분)
+            end = min(end, len(full_waveform))
+            start = min(start, end) # start가 end보다 커지는 것 방지
+            
+            split_audio = full_waveform[start:end]
+
+        # 오디오가 비어있는 경우 예외 처리
+        if len(split_audio) == 0:
+            return
+
+        # 모노 변환 (SepReformer 출력은 이미 모노일 확률이 높지만 안전하게 처리)
+        split_audio = librosa.to_mono(split_audio)
+        
+        out_file = f"{file_name}_{idx:05d}.mp3" # 정렬을 위해 0 padding 추가 추천 (:05d)
+        out_path = os.path.join(folder_path, out_file)
+        
+        # write_mp3 함수는 외부 유틸리티라고 가정
+        write_mp3(out_path, sr, split_audio)
+
+    # Use ThreadPoolExecutor for concurrent execution
+    with ThreadPoolExecutor(max_workers=72) as executor:
+        # Submit each segment processing as a separate thread
+        futures = [
+            executor.submit(process_segment, idx, segment)
+            for idx, segment in enumerate(asr_result)
+        ]
+
+        # Wait for all threads to complete
+        for future in tqdm.tqdm(
+            futures, total=len(asr_result), desc="Exporting to MP3"
+        ):
+            try:
+                future.result()
+            except Exception as e:
+                print(f"Error exporting segment: {e}")
 
 @time_logger
 def export_to_wav(audio, asr_result, folder_path, file_name):

@@ -24,7 +24,7 @@ def cut_mp3(input_file, output_file, minutes=2):
 # 사용 예시
 if __name__ == "__main__":
     # 입력 파일명과 출력 파일명을 지정하세요
-    input_path = "/mnt/ddn/kyudan/Audio-data-centric/podcast-pipeline/𝗣𝗲𝗿𝘀𝗼𝗻𝗮𝗹𝗶𝘁𝗶𝗲𝘀  𝗟𝗲𝗮𝗿𝗻 𝗘𝗻𝗴𝗹𝗶𝘀𝗵 𝗤𝘂𝗶𝗰𝗸𝗹𝘆 𝘄𝗶𝘁𝗵 𝗣𝗼𝗱𝗰𝗮𝘀𝘁  𝗘𝗽𝗶𝘀𝗼𝗱𝗲 109 - English Podcast Zone.mp3" 
-    output_path = "test_english_with_music.mp3"
+    input_path = "/mnt/ddn/kyudan/Audio-data-centric/podcast-pipeline/data/1-new-beginnings.mp3" 
+    output_path = "test_english_with_overlap.mp3"
     
     cut_mp3(input_path, output_path)
