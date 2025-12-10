@@ -80,7 +80,9 @@ from typing import List, Tuple
 from itertools import zip_longest
 
 # Import FlowSE denoising class
-sys.path.insert(0, "/mnt/ddn/kyudan/Audio-data-centric/FlowSE")
+# Use relative path for better portability
+flowse_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "FlowSE")
+sys.path.insert(0, flowse_path)
 from simple_denoise import FlowSEDenoiser
 
 warnings.filterwarnings("ignore")

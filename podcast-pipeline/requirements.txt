@@ -238,3 +238,4 @@ yarl==1.20.1
 zope.event==5.1.1
 zope.interface==7.2
 g2pk
+demucs>=4.0.0

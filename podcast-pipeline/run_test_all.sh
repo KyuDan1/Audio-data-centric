@@ -38,8 +38,8 @@ ASRMoE=(--no-ASRMoE)
 # DEMUCS 플래그 조합 (배경음악 제거)
 # --demucs: PANNs로 배경음악 검출 후 Demucs로 보컬 추출
 # --no-demucs: 배경음악 제거 안 함 (기본값)
-demucs_flags=(--no-demucs)
-#demucs_flags=(--demucs --no-demucs)
+#demucs_flags=(--demucs)
+demucs_flags=(--demucs)
 # WhisperX 단어 수준 타임스탬프 플래그
 # --whisperx_word_timestamps: WhisperX 정렬을 통한 단어 수준 타임스탬프 활성화
 # --no-whisperx_word_timestamps: 단어 수준 타임스탬프 비활성화 (기본값)
@@ -54,7 +54,7 @@ qwen3omni_flags=(--no-qwen3omni)
 # --sepreformer: SepReformer를 사용한 겹침 음성 분리 활성화
 # --no-sepreformer: 겹침 음성 분리 비활성화 (기본값)
 #sepreformer_flags=(--sepreformer)
-sepreformer_flags=(--sepreformer --no-sepreformer)
+sepreformer_flags=(--sepreformer)
 # SepReformer overlap threshold (겹침으로 판단할 최소 시간, 초 단위)
 overlap_thresholds=(1.0)
 # 추가된 MERGE_GAP 조합
@@ -78,7 +78,7 @@ for folder in "${folders[@]}"; do
                           for sepreformer in "${sepreformer_flags[@]}"; do
                             for overlap_th in "${overlap_thresholds[@]}"; do
                               echo "▶ Folder: ${folder}, ${vad}, ${dia3}, ${initprompt}, LLM=${llm}, seg_th=${seg}, min_cluster_size=${min_cluster}, clust_th=${clust}, merge_gap=${merge_gap}, ${asrmoe}, ${demucs}, ${whisperx}, ${qwen3omni}, ${sepreformer}, overlap_th=${overlap_th}, korean=${korean}"
-                              python main_original_ASR_MoE.py \
+                              /mnt/fr20tb/kyudan/miniforge3/envs/dataset/bin/python main_original_ASR_MoE.py \
                                 --input_folder_path "${folder}" \
                                 ${vad} ${dia3} ${initprompt} ${asrmoe} ${demucs} ${whisperx} ${qwen3omni} ${sepreformer} \
                                 --LLM "${llm}" \
