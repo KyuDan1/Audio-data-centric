@@ -9,6 +9,7 @@
 import librosa
 import torch
 import numpy as np
+import onnxruntime
 
 VAD_THRESHOLD = 20
 SAMPLING_RATE = 16000
@@ -35,6 +36,20 @@ class SileroVAD:
             RuntimeError: If loading the model fails.
         """
         try:
+            # Set ONNX Runtime providers based on device
+            if device.type == "cuda":
+                providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
+            else:
+                providers = ['CPUExecutionProvider']
+
+            # Monkey-patch onnxruntime.InferenceSession to use providers by default
+            original_init = onnxruntime.InferenceSession.__init__
+
+            def patched_init(self, path_or_bytes, sess_options=None, providers=providers, **kwargs):
+                original_init(self, path_or_bytes, sess_options=sess_options, providers=providers, **kwargs)
+
+            onnxruntime.InferenceSession.__init__ = patched_init
+
             vad_model, utils = torch.hub.load(
                 repo_or_dir="snakers4/silero-vad" if not local else "vad/silero-vad",
                 model=model,
@@ -42,6 +57,10 @@ class SileroVAD:
                 onnx=True,
                 source="github" if not local else "local",
             )
+
+            # Restore original __init__
+            onnxruntime.InferenceSession.__init__ = original_init
+
             self.vad_model = vad_model
             (get_speech_timestamps, _, _, _, _) = utils
             self.get_speech_timestamps = get_speech_timestamps

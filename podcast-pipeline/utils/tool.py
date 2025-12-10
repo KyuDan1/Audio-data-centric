@@ -234,21 +234,27 @@ def export_to_mp3_new(audio, asr_result, folder_path, file_name):
     # Function to process each segment in a separate thread
     def process_segment(idx, segment):
         split_audio = None
-        
-        # 1. 분리된(enhanced) 오디오가 있는지 확인
+
+        # 1. FlowSE 디노이징된 오디오가 있는지 확인 (최우선)
+        if "denoised_audio_path" in segment and segment.get("flowse_denoised", False):
+            denoised_path = segment["denoised_audio_path"]
+            if os.path.exists(denoised_path):
+                # 디노이징된 오디오 파일 로드
+                split_audio, _ = sf.read(denoised_path)
+        # 2. 분리된(enhanced) 오디오가 있는지 확인
         # (SepReformer를 거친 오버랩 구간은 이 데이터가 존재함)
-        if "enhanced_audio" in segment and segment["enhanced_audio"] is not None:
+        elif "enhanced_audio" in segment and segment["enhanced_audio"] is not None:
             # 이미 분리된 오디오 데이터(numpy array)를 사용
             split_audio = segment["enhanced_audio"]
         else:
-            # 2. 없다면 기존 방식대로 원본에서 시간으로 잘라내기
+            # 3. 없다면 기존 방식대로 원본에서 시간으로 잘라내기
             start = int(segment["start"] * sr)
             end = int(segment["end"] * sr)
-            
+
             # 인덱스 에러 방지 (끝부분)
             end = min(end, len(full_waveform))
             start = min(start, end) # start가 end보다 커지는 것 방지
-            
+
             split_audio = full_waveform[start:end]
 
         # 오디오가 비어있는 경우 예외 처리

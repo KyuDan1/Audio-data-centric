@@ -79,9 +79,6 @@ import collections
 from typing import List, Tuple
 from itertools import zip_longest
 
-# Import FlowSE denoising class
-sys.path.insert(0, "/mnt/ddn/kyudan/Audio-data-centric/FlowSE")
-from simple_denoise import FlowSEDenoiser
 
 warnings.filterwarnings("ignore")
 audio_count = 0
@@ -271,22 +268,17 @@ def standardization(audio):
 
 # Step 2: Speaker Diarization
 @time_logger
-def detect_background_music(audio, panns_model, threshold=0.3):
+def detect_background_music(audio, threshold=0.3):
     """
     PANNs를 사용하여 배경음악이 있는지 검출합니다.
 
     Args:
         audio (dict): A dictionary containing the audio waveform and sample rate.
-        panns_model (AudioTagging): 로드된 PANNs 모델 인스턴스.
         threshold (float): Music 확률 임계값. 이 값 이상이면 배경음악이 있다고 판단.
 
     Returns:
         tuple: (has_music: bool, music_prob: float)
     """
-    if panns_model is None:
-        logger.warning("PANNs model is not loaded, skipping music detection")
-        return False, 0.0
-
     logger.debug("Detecting background music using PANNs")
 
     # PANNs는 32kHz 오디오를 기대하므로 리샘플링
@@ -298,11 +290,20 @@ def detect_background_music(audio, panns_model, threshold=0.3):
     else:
         waveform_32k = waveform
 
-    # PANNs inference (모델은 이미 로드됨)
-    (clipwise_output, embedding) = panns_model.inference(waveform_32k[None, :])
+    # Set custom PANNs data directory
+    panns_data_dir = '/mnt/ddn/kyudan/panns_data'
+    os.makedirs(panns_data_dir, exist_ok=True)
+
+    # Set environment variable for PANNs to use custom directory
+    os.environ['PANNS_DATA'] = panns_data_dir
+
+    # PANNs inference with custom checkpoint path
+    checkpoint_path = os.path.join(panns_data_dir, 'Cnn14_mAP=0.431.pth')
+    at = AudioTagging(checkpoint_path=checkpoint_path, device='cuda' if torch.cuda.is_available() else 'cpu')
+    (clipwise_output, embedding) = at.inference(waveform_32k[None, :])
 
     # Get labels
-    labels = panns_model.labels
+    labels = at.labels
 
     # Find Music probability
     music_idx = labels.index('Music') if 'Music' in labels else None
@@ -316,23 +317,18 @@ def detect_background_music(audio, panns_model, threshold=0.3):
         return False, 0.0
 
 
-def detect_segment_background_music(segment_audio, sample_rate, panns_model, threshold=0.3):
+def detect_segment_background_music(segment_audio, sample_rate, threshold=0.3):
     """
     세그먼트 오디오에 대해 배경음악이 있는지 검출합니다.
 
     Args:
         segment_audio (np.ndarray): 세그먼트 오디오 waveform.
         sample_rate (int): 샘플 레이트.
-        panns_model (AudioTagging): 로드된 PANNs 모델 인스턴스.
         threshold (float): Music 확률 임계값.
 
     Returns:
         tuple: (has_music: bool, music_prob: float)
     """
-    if panns_model is None:
-        logger.warning("PANNs model is not loaded, skipping music detection")
-        return False, 0.0
-
     # PANNs는 32kHz 오디오를 기대하므로 리샘플링
     if sample_rate != 32000:
         waveform_32k = librosa.resample(segment_audio, orig_sr=sample_rate, target_sr=32000)
@@ -346,11 +342,18 @@ def detect_segment_background_music(segment_audio, sample_rate, panns_model, thr
         logger.warning(f"Segment too short for music detection ({len(waveform_32k)/32000:.2f}s < 1.0s), skipping music detection")
         return False, 0.0
 
-    # PANNs inference (모델은 이미 로드됨)
-    (clipwise_output, embedding) = panns_model.inference(waveform_32k[None, :])
+    # Set custom PANNs data directory
+    panns_data_dir = '/mnt/ddn/kyudan/panns_data'
+    os.makedirs(panns_data_dir, exist_ok=True)
+    os.environ['PANNS_DATA'] = panns_data_dir
+
+    # PANNs inference with custom checkpoint path
+    checkpoint_path = os.path.join(panns_data_dir, 'Cnn14_mAP=0.431.pth')
+    at = AudioTagging(checkpoint_path=checkpoint_path, device='cuda' if torch.cuda.is_available() else 'cpu')
+    (clipwise_output, embedding) = at.inference(waveform_32k[None, :])
 
     # Get labels
-    labels = panns_model.labels
+    labels = at.labels
 
     # Find Music probability
     music_idx = labels.index('Music') if 'Music' in labels else None
@@ -385,15 +388,10 @@ def remove_segment_background_music_demucs(segment_audio, sample_rate):
         import subprocess
         demucs_output_dir = os.path.join(temp_dir, "separated")
 
-        # Check if CUDA is available
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-        logger.debug(f"Running Demucs on device: {device}")
-
         cmd = [
             "python", "-m", "demucs.separate",
             "-n", "htdemucs",
             "--two-stems", "vocals",
-            "-d", device,  # Explicitly specify device (cuda or cpu)
             "-o", demucs_output_dir,
             temp_input
         ]
@@ -425,60 +423,52 @@ def remove_segment_background_music_demucs(segment_audio, sample_rate):
 
 
 @time_logger
-def preprocess_segments_with_demucs(segment_list, audio, panns_model=None, use_demucs=False, padding=0.5):
+def preprocess_segments_with_demucs(segment_list, audio, use_demucs=False):
     """
     ASR 전에 세그먼트별로 배경음악을 검출하고 demucs를 적용합니다.
-    (Padding을 추가하여 ASR 타임스탬프가 늘어날 경우를 대비합니다)
+
+    Args:
+        segment_list (list): 세그먼트 리스트 (start, end, speaker 포함)
+        audio (dict): 오디오 딕셔너리 (waveform, sample_rate 포함)
+        use_demucs (bool): demucs 적용 여부
+
+    Returns:
+        tuple: (updated_audio, segment_demucs_flags)
+            - updated_audio: demucs가 적용된 오디오 딕셔너리
+            - segment_demucs_flags: 각 세그먼트의 demucs 적용 여부 리스트
     """
     if not use_demucs:
         logger.info("Demucs preprocessing skipped (flag disabled)")
         return audio, [False] * len(segment_list)
 
-    logger.info(f"Preprocessing {len(segment_list)} segments with background music detection and removal (padding={padding}s)")
+    logger.info(f"Preprocessing {len(segment_list)} segments with background music detection and removal")
 
     waveform = audio["waveform"].copy()
     sample_rate = audio["sample_rate"]
-    total_samples = len(waveform)
     segment_demucs_flags = []
 
     for idx, segment in enumerate(segment_list):
-        # Apply padding to cover ASR boundary shifts
-        start_time = max(0, segment["start"] - padding)
-        end_time = segment["end"] + padding # 경계를 넘는 것은 슬라이싱에서 자동 처리됨
-        
+        start_time = segment["start"]
+        end_time = segment["end"]
         start_frame = int(start_time * sample_rate)
         end_frame = int(end_time * sample_rate)
-        
-        # 전체 길이 넘어가는 것 방지
-        end_frame = min(end_frame, total_samples)
 
         segment_audio = waveform[start_frame:end_frame]
-        
-        # 세그먼트가 너무 짧으면 패스
-        if len(segment_audio) < 16000: # 0.5초 미만
-            segment_demucs_flags.append(False)
-            continue
 
-        # Detect background music (padding이 포함된 구간으로 검사)
-        has_music, music_prob = detect_segment_background_music(segment_audio, sample_rate, panns_model, threshold=0.3)
-        
+        # Detect background music
+        has_music, music_prob = detect_segment_background_music(segment_audio, sample_rate, threshold=0.3)
+        logger.debug(f"Segment {idx} ({start_time:.2f}s - {end_time:.2f}s): Music probability = {music_prob:.3f}")
+
         if has_music:
-            logger.info(f"Segment {idx} (with padding): Background music detected (prob={music_prob:.3f}), applying Demucs...")
-            # Apply demucs
+            logger.info(f"Segment {idx}: Background music detected (prob={music_prob:.3f}), applying Demucs...")
+            # Apply demucs to remove background music
             vocal_audio = remove_segment_background_music_demucs(segment_audio, sample_rate)
-            
             # Replace the segment in the waveform
-            # vocal_audio 길이가 segment_audio와 다를 수 있으므로 길이를 맞춤
-            target_length = len(segment_audio)
-            if len(vocal_audio) >= target_length:
-                waveform[start_frame:end_frame] = vocal_audio[:target_length]
-            else:
-                # 드문 경우지만 vocal_audio가 짧을 경우 패딩 처리
-                waveform[start_frame : start_frame + len(vocal_audio)] = vocal_audio
-
+            waveform[start_frame:end_frame] = vocal_audio[:len(segment_audio)]  # Ensure same length
             segment_demucs_flags.append(True)
             logger.info(f"Segment {idx}: Demucs applied successfully")
         else:
+            logger.debug(f"Segment {idx}: No significant background music (prob={music_prob:.3f})")
             segment_demucs_flags.append(False)
 
     # Update audio dictionary with processed waveform
@@ -487,8 +477,9 @@ def preprocess_segments_with_demucs(segment_list, audio, panns_model=None, use_d
 
     # Also update audio_segment for export
     from pydub import AudioSegment as PydubAudioSegment
-    waveform_clipped = np.clip(waveform, -1.0, 1.0)
-    waveform_int16 = (waveform_clipped * 32767).astype(np.int16)
+    # Convert numpy array to AudioSegment
+    # Normalize to int16 range
+    waveform_int16 = (waveform * 32767).astype(np.int16)
     updated_audio_segment = PydubAudioSegment(
         waveform_int16.tobytes(),
         frame_rate=sample_rate,
@@ -498,6 +489,7 @@ def preprocess_segments_with_demucs(segment_list, audio, panns_model=None, use_d
     updated_audio["audio_segment"] = updated_audio_segment
 
     logger.info(f"Demucs preprocessing completed: {sum(segment_demucs_flags)}/{len(segment_list)} segments processed")
+
     return updated_audio, segment_demucs_flags
 
 
@@ -655,145 +647,146 @@ def detect_overlapping_segments(segment_list, overlap_threshold=0.2):
     return overlapping_pairs
 
 
-class SepReformerSeparator:
+@time_logger
+def separate_audio_with_sepreformer(audio_segment, sample_rate, sepreformer_path):
     """
-    SepReformer 모델을 한 번만 로드하고 여러 번 inference할 수 있는 클래스
-    """
-    def __init__(self, sepreformer_path, device):
-        """
-        SepReformer 모델 초기화 및 로드
+    Use SepReformer to separate overlapping audio into two speaker streams.
 
-        Args:
-            sepreformer_path: SepReformer 모델 디렉토리 경로
-            device: torch device (cuda/cpu)
-        """
-        import sys
+    Args:
+        audio_segment (np.ndarray): Audio segment with overlapping speakers
+        sample_rate (int): Sample rate of the audio
+        sepreformer_path (str): Path to SepReformer model directory
+
+    Returns:
+        tuple: (separated_audio_1, separated_audio_2) as numpy arrays
+    """
+    import sys
+    import tempfile
+    import importlib
+
+    # Store original sys.path to restore later
+    original_sys_path = sys.path.copy()
+
+    try:
+        # CRITICAL: The main script already imports 'models' and 'utils' packages, which conflict with SepReformer's
+        # Solution: Temporarily manipulate sys.path and sys.modules to load SepReformer's packages
+
+        # Save the current 'models' and 'utils' modules if they exist
+        original_models = sys.modules.get('models', None)
+        original_utils = sys.modules.get('utils', None)
+
+        # Remove podcast-pipeline from sys.path temporarily to avoid conflicts with utils package
+        podcast_pipeline_path = os.path.dirname(os.path.abspath(__file__))
+        paths_to_remove = [p for p in sys.path if podcast_pipeline_path in p]
+        for path in paths_to_remove:
+            sys.path.remove(path)
+
+        # Add SepReformer to path (must be at the beginning)
+        sepreformer_parent = sepreformer_path
+        if sepreformer_parent not in sys.path:
+            sys.path.insert(0, sepreformer_parent)
+
+        # Clear all related modules from sys.modules to force reload from SepReformer
+        modules_to_clear = [key for key in sys.modules.keys() if key.startswith('models.') or key.startswith('utils.') or key in ['models', 'utils']]
+        cleared_modules = {}
+        for module_name in modules_to_clear:
+            cleared_modules[module_name] = sys.modules[module_name]
+            del sys.modules[module_name]
+
+        # Now import from SepReformer's models package
+        from models.SepReformer_Base_WSJ0.model import Model
         import yaml
 
-        self.sepreformer_path = sepreformer_path
-        self.device = device
+        # Restore the original modules (but keep Model class reference)
+        for module_name, module_obj in cleared_modules.items():
+            sys.modules[module_name] = module_obj
 
-        print(f"[SepReformer] Initializing on device: {self.device}")
+        # Create temporary file for input audio
+        temp_dir = tempfile.mkdtemp(prefix="sepreformer_")
+        temp_input = os.path.join(temp_dir, "mixture.wav")
 
-        # Store original sys.path to restore later
-        original_sys_path = sys.path.copy()
+        # Resample to 8kHz if needed (SepReformer WSJ0 model expects 8kHz)
+        if sample_rate != 8000:
+            audio_8k = librosa.resample(audio_segment, orig_sr=sample_rate, target_sr=8000)
+        else:
+            audio_8k = audio_segment
 
-        try:
-            # Save the current 'models' and 'utils' modules if they exist
-            original_models = sys.modules.get('models', None)
-            original_utils = sys.modules.get('utils', None)
+        # Save temporary input file
+        sf.write(temp_input, audio_8k, 8000)
 
-            # Remove podcast-pipeline from sys.path temporarily
-            podcast_pipeline_path = os.path.dirname(os.path.abspath(__file__))
-            paths_to_remove = [p for p in sys.path if podcast_pipeline_path in p]
-            for path in paths_to_remove:
-                sys.path.remove(path)
+        # Load SepReformer config
+        config_path = os.path.join(sepreformer_path, "models/SepReformer_Base_WSJ0/configs.yaml")
+        with open(config_path, 'r') as f:
+            yaml_dict = yaml.safe_load(f)
+        config = yaml_dict["config"]
 
-            # Add SepReformer to path
-            if sepreformer_path not in sys.path:
-                sys.path.insert(0, sepreformer_path)
+        # Load model
+        model = Model(**config["model"])
 
-            # Clear conflicting modules
-            modules_to_clear = [key for key in sys.modules.keys()
-                              if key.startswith('models.') or key.startswith('utils.') or key in ['models', 'utils']]
-            cleared_modules = {}
-            for module_name in modules_to_clear:
-                cleared_modules[module_name] = sys.modules[module_name]
-                del sys.modules[module_name]
+        # Load checkpoint
+        checkpoint_dir = os.path.join(sepreformer_path, "models/SepReformer_Base_WSJ0/log/pretrain_weights")
+        if not os.path.exists(checkpoint_dir) or not os.listdir(checkpoint_dir):
+            # Try scratch_weights if pretrain_weights is empty
+            checkpoint_dir = os.path.join(sepreformer_path, "models/SepReformer_Base_WSJ0/log/scratch_weights")
 
-            # Import SepReformer's model
-            from models.SepReformer_Base_WSJ0.model import Model
+        checkpoint_files = [f for f in os.listdir(checkpoint_dir) if f.endswith(('.pt', '.pth'))]
 
-            # Restore the original modules
-            for module_name, module_obj in cleared_modules.items():
-                sys.modules[module_name] = module_obj
+        if not checkpoint_files:
+            raise FileNotFoundError(f"No checkpoint found in {checkpoint_dir}")
 
-            # Load SepReformer config
-            config_path = os.path.join(sepreformer_path, "models/SepReformer_Base_WSJ0/configs.yaml")
-            with open(config_path, 'r') as f:
-                yaml_dict = yaml.safe_load(f)
-            self.config = yaml_dict["config"]
+        checkpoint_path = os.path.join(checkpoint_dir, checkpoint_files[-1])  # Use latest checkpoint
+        checkpoint = torch.load(checkpoint_path, map_location=device)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        model = model.to(device)
+        model.eval()
 
-            # Load model
-            print("[SepReformer] Loading model...")
-            self.model = Model(**self.config["model"])
+        # Load and process audio
+        mixture, _ = librosa.load(temp_input, sr=8000)
+        mixture_tensor = torch.tensor(mixture, dtype=torch.float32).unsqueeze(0)
 
-            # Load checkpoint
-            checkpoint_dir = os.path.join(sepreformer_path, "models/SepReformer_Base_WSJ0/log/pretrain_weights")
-            if not os.path.exists(checkpoint_dir) or not os.listdir(checkpoint_dir):
-                checkpoint_dir = os.path.join(sepreformer_path, "models/SepReformer_Base_WSJ0/log/scratch_weights")
+        # Padding
+        stride = config["model"]["module_audio_enc"]["stride"]
+        remains = mixture_tensor.shape[-1] % stride
+        if remains != 0:
+            padding = stride - remains
+            mixture_padded = torch.nn.functional.pad(mixture_tensor, (0, padding), "constant", 0)
+        else:
+            mixture_padded = mixture_tensor
 
-            checkpoint_files = [f for f in os.listdir(checkpoint_dir) if f.endswith(('.pt', '.pth'))]
-            if not checkpoint_files:
-                raise FileNotFoundError(f"No checkpoint found in {checkpoint_dir}")
+        # Inference
+        with torch.inference_mode():
+            nnet_input = mixture_padded.to(device)
+            estim_src, _ = model(nnet_input)
 
-            checkpoint_path = os.path.join(checkpoint_dir, checkpoint_files[-1])
-            checkpoint = torch.load(checkpoint_path, map_location=device)
-            self.model.load_state_dict(checkpoint['model_state_dict'])
-            self.model = self.model.to(device)
-            self.model.eval()
+            # Extract separated sources
+            src1 = estim_src[0][..., :mixture_tensor.shape[-1]].squeeze().cpu().numpy()
+            src2 = estim_src[1][..., :mixture_tensor.shape[-1]].squeeze().cpu().numpy()
 
-            print("[SepReformer] Model initialization complete!")
+        # Resample back to original sample rate if needed
+        if sample_rate != 8000:
+            src1 = librosa.resample(src1, orig_sr=8000, target_sr=sample_rate)
+            src2 = librosa.resample(src2, orig_sr=8000, target_sr=sample_rate)
 
-        finally:
-            # Restore original sys.path
+        # Cleanup
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+        logger.info(f"SepReformer separation completed: output shapes {src1.shape}, {src2.shape}")
+        return src1, src2
+
+    except Exception as e:
+        logger.error(f"SepReformer separation failed: {e}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        # Return original audio duplicated as fallback
+        return audio_segment, audio_segment
+    finally:
+        # Cleanup: Restore original sys.path
+        if 'original_sys_path' in locals():
             sys.path = original_sys_path
-
-    def separate(self, audio_segment, sample_rate):
-        """
-        오디오 분리 수행
-
-        Args:
-            audio_segment (np.ndarray): 분리할 오디오 세그먼트
-            sample_rate (int): 오디오 샘플레이트
-
-        Returns:
-            tuple: (separated_audio_1, separated_audio_2) as numpy arrays
-        """
-        try:
-            # Resample to 8kHz if needed
-            if sample_rate != 8000:
-                audio_8k = librosa.resample(audio_segment, orig_sr=sample_rate, target_sr=8000)
-            else:
-                audio_8k = audio_segment
-
-            # Prepare tensor
-            mixture_tensor = torch.tensor(audio_8k, dtype=torch.float32).unsqueeze(0)
-
-            # Padding
-            stride = self.config["model"]["module_audio_enc"]["stride"]
-            remains = mixture_tensor.shape[-1] % stride
-            if remains != 0:
-                padding = stride - remains
-                mixture_padded = torch.nn.functional.pad(mixture_tensor, (0, padding), "constant", 0)
-            else:
-                mixture_padded = mixture_tensor
-
-            # Inference
-            with torch.inference_mode():
-                nnet_input = mixture_padded.to(self.device)
-                estim_src, _ = self.model(nnet_input)
-
-                # Extract separated sources
-                src1 = estim_src[0][..., :mixture_tensor.shape[-1]].squeeze().cpu().numpy()
-                src2 = estim_src[1][..., :mixture_tensor.shape[-1]].squeeze().cpu().numpy()
-
-            # Resample back to original sample rate if needed
-            if sample_rate != 8000:
-                src1 = librosa.resample(src1, orig_sr=8000, target_sr=sample_rate)
-                src2 = librosa.resample(src2, orig_sr=8000, target_sr=sample_rate)
-
-            return src1, src2
-
-        except Exception as e:
-            logger.error(f"SepReformer separation failed: {e}")
-            import traceback
-            logger.error(f"Traceback: {traceback.format_exc()}")
-            return audio_segment, audio_segment
 
 
 @time_logger
-def identify_speaker_with_embedding(audio_segment, sample_rate, reference_embeddings, speaker_labels, embedding_model):
+def identify_speaker_with_embedding(audio_segment, sample_rate, reference_embeddings, speaker_labels):
     """
     Identify which speaker an audio segment belongs to using speaker embeddings.
 
@@ -802,11 +795,16 @@ def identify_speaker_with_embedding(audio_segment, sample_rate, reference_embedd
         sample_rate (int): Sample rate of the audio
         reference_embeddings (dict): Dictionary of {speaker_label: embedding_tensor}
         speaker_labels (list): List of possible speaker labels
-        embedding_model: 미리 로드된 pyannote embedding 모델
 
     Returns:
         str: Identified speaker label
     """
+    from pyannote.audio import Model
+    from pyannote.audio.pipelines.utils import get_model
+
+    # Use pyannote speaker embedding model
+    embedding_model = Model.from_pretrained("pyannote/embedding", use_auth_token=cfg["huggingface_token"])
+    embedding_model = embedding_model.to(device)
 
     # Extract embedding from audio segment
     # Resample to 16kHz if needed (pyannote expects 16kHz)
@@ -846,26 +844,11 @@ def identify_speaker_with_embedding(audio_segment, sample_rate, reference_embedd
 
 @time_logger
 def process_overlapping_segments_with_separation(segment_list, audio, overlap_threshold=1.0,
-                                                 separator=None, embedding_model=None):
+                                                 sepreformer_path="/mnt/ddn/kyudan/Audio-data-centric/SepReformer"):
     """
     Process overlapping segments by separating them with SepReformer.
     [Updated] Matches the volume of separated audio to the original overlap audio to prevent volume jumps.
-
-    Args:
-        segment_list: 세그먼트 리스트
-        audio: 오디오 딕셔너리
-        overlap_threshold: 오버랩 임계값
-        separator: 미리 로드된 SepReformerSeparator 객체
-        embedding_model: 미리 로드된 pyannote embedding 모델
     """
-    if separator is None:
-        logger.warning("SepReformer separator not provided, skipping separation")
-        return audio, segment_list
-
-    if embedding_model is None:
-        logger.warning("Embedding model not provided, skipping separation")
-        return audio, segment_list
-
     logger.info(f"Processing overlapping segments with SepReformer (threshold: {overlap_threshold}s)")
 
     # -------------------------------------------------------------------------
@@ -918,6 +901,10 @@ def process_overlapping_segments_with_separation(segment_list, audio, overlap_th
     logger.info(f"Found {len(overlapping_pairs)} overlapping segment pairs")
 
     # (Reference Embeddings 추출 로직 - 기존 유지)
+    from pyannote.audio import Model as PyannoteModel
+    embedding_model = PyannoteModel.from_pretrained("pyannote/embedding", use_auth_token=cfg["huggingface_token"])
+    embedding_model = embedding_model.to(device)
+
     reference_embeddings = {}
     all_speakers = list(set([seg['speaker'] for seg in segment_list]))
 
@@ -956,13 +943,13 @@ def process_overlapping_segments_with_separation(segment_list, audio, overlap_th
         overlap_audio = waveform[start_frame:end_frame]
 
         # Separate with SepReformer
-        separated_src1, separated_src2 = separator.separate(
-            overlap_audio, sample_rate
+        separated_src1, separated_src2 = separate_audio_with_sepreformer(
+            overlap_audio, sample_rate, sepreformer_path
         )
 
         # Identify speakers
         speaker1_identity = identify_speaker_with_embedding(
-            separated_src1, sample_rate, reference_embeddings, [seg1_speaker, seg2_speaker], embedding_model
+            separated_src1, sample_rate, reference_embeddings, [seg1_speaker, seg2_speaker]
         )
         
         if speaker1_identity == seg1_speaker:
@@ -1386,118 +1373,6 @@ def add_qwen3omni_caption(filtered_list, audio, save_path):
 
     logger.info("Qwen3-Omni caption addition completed")
     return filtered_list, caption_processing_time
-
-
-def apply_flowse_denoising(filtered_list, audio, save_path, denoiser=None, use_asr_moe=False):
-    """
-    sepreformer==True인 세그먼트에 대해 FlowSE 디노이징을 적용합니다.
-
-    Args:
-        filtered_list (list): ASR 결과 세그먼트 리스트
-        audio (dict): 오디오 딕셔너리 (waveform, sample_rate 포함)
-        save_path (str): 디노이즈된 오디오 파일을 저장할 경로
-        denoiser (FlowSEDenoiser): 미리 로드된 FlowSE denoiser 객체
-        use_asr_moe (bool): ASRMoE 모드 여부 (True면 ensemble_text, False면 whisper_text 사용)
-
-    Returns:
-        tuple: (디노이징이 적용된 세그먼트 리스트, 처리 시간(초))
-    """
-    if denoiser is None:
-        logger.warning("FlowSE denoiser not provided, skipping denoising")
-        return filtered_list, 0.0
-    logger.info(f"Applying FlowSE denoising to sepreformer segments...")
-    denoise_start_time = time.time()
-
-    # 디노이즈 디렉토리 생성
-    denoise_dir = os.path.join(save_path, "denoised_audio")
-    os.makedirs(denoise_dir, exist_ok=True)
-
-    denoised_count = 0
-
-    for idx, segment in enumerate(filtered_list):
-        # sepreformer==True인 세그먼트만 처리
-        if not segment.get("sepreformer", False):
-            continue
-
-        try:
-            # 텍스트 선택: ASRMoE이면 ensemble_text (또는 text), 아니면 whisper_text
-            if use_asr_moe:
-                # asr_MoE에서는 "text"에 ensemble 결과가 저장됨
-                text = segment.get("text", "")
-            else:
-                # 일반 asr에서는 "text"에 whisper 결과가 저장됨
-                text = segment.get("text", "")
-
-            if not text or not text.strip():
-                logger.warning(f"Segment {idx}: No text available for denoising, skipping")
-                continue
-
-            # 세그먼트 오디오 추출
-            # enhanced_audio가 있으면 우선 사용 (SepReformer로 분리된 오디오)
-            if "enhanced_audio" in segment:
-                segment_audio = segment["enhanced_audio"]
-                sample_rate = audio["sample_rate"]
-            else:
-                start_time = segment["start"]
-                end_time = segment["end"]
-                sample_rate = audio["sample_rate"]
-                start_frame = int(start_time * sample_rate)
-                end_frame = int(end_time * sample_rate)
-                segment_audio = audio["waveform"][start_frame:end_frame]
-
-            # 원본 오디오의 RMS 레벨 측정 (볼륨 유지를 위해)
-            original_rms = np.sqrt(np.mean(segment_audio ** 2))
-
-            # 임시 입력 오디오 파일로 저장
-            temp_input_path = os.path.join(denoise_dir, f"temp_input_{idx:05d}.wav")
-            sf.write(temp_input_path, segment_audio, sample_rate)
-
-            # 출력 파일 경로 설정
-            output_path = os.path.join(denoise_dir, f"denoised_{idx:05d}.wav")
-
-            # FlowSE 디노이징 수행
-            logger.debug(f"Segment {idx}: Denoising with text: '{text[:50]}...'")
-            denoised_path = denoiser.denoise(
-                audio_path=temp_input_path,
-                text=text,
-                output_path=output_path
-            )
-
-            # 디노이즈된 오디오를 세그먼트에 추가
-            denoised_audio, denoised_sr = sf.read(denoised_path)
-
-            # 볼륨 매칭: 디노이징된 오디오를 원본과 같은 RMS 레벨로 조정
-            if original_rms > 1e-8:  # 무음이 아닌 경우에만
-                denoised_rms = np.sqrt(np.mean(denoised_audio ** 2))
-                if denoised_rms > 1e-8:  # 디노이징된 오디오도 무음이 아닌 경우
-                    volume_scale = original_rms / denoised_rms
-                    denoised_audio = denoised_audio * volume_scale
-                    # 클리핑 방지
-                    denoised_audio = np.clip(denoised_audio, -1.0, 1.0)
-                    # 볼륨 조정된 오디오를 다시 저장
-                    sf.write(denoised_path, denoised_audio, denoised_sr)
-                    logger.debug(f"Segment {idx}: Volume matched (scale: {volume_scale:.3f})")
-
-            segment["denoised_audio_path"] = denoised_path
-            segment["flowse_denoised"] = True
-
-            # 임시 입력 파일 삭제
-            if os.path.exists(temp_input_path):
-                os.remove(temp_input_path)
-
-            denoised_count += 1
-            logger.debug(f"Segment {idx}: Successfully denoised and saved to {denoised_path}")
-
-        except Exception as e:
-            logger.error(f"Segment {idx}: Error during FlowSE denoising: {e}")
-            segment["flowse_denoised"] = False
-
-    denoise_end_time = time.time()
-    denoise_processing_time = denoise_end_time - denoise_start_time
-
-    logger.info(f"FlowSE denoising completed: {denoised_count} segments processed")
-    return filtered_list, denoise_processing_time
-
 
 # 비용 계산 함수
 def calculate_cost(model_name: str, input_tokens: int, output_tokens: int) -> float:
@@ -1944,36 +1819,17 @@ def export_segments_with_enhanced_audio(audio_info, segment_list, save_dir, audi
         spk = seg.get("speaker", "Unknown")
         filename = f"{idx_str}_{spk}.mp3"
         file_path = os.path.join(segments_dir, filename)
-
-        # 1. FlowSE 디노이징된 오디오가 있는지 확인 (최우선)
-        if seg.get("flowse_denoised", False) and "denoised_audio_path" in seg:
-            denoised_path = seg["denoised_audio_path"]
-            if os.path.exists(denoised_path):
-                # 디노이징된 오디오 파일 로드
-                denoised_waveform, denoised_sr = sf.read(denoised_path)
-
-                # float32 (-1.0 ~ 1.0) -> int16 범위로 변환
-                denoised_waveform = np.clip(denoised_waveform, -1.0, 1.0)
-                wav_int16 = (denoised_waveform * 32767).astype(np.int16)
-
-                target_segment = PydubAudioSegment(
-                    wav_int16.tobytes(),
-                    frame_rate=denoised_sr,
-                    sample_width=2,
-                    channels=1
-                )
-                logger.debug(f"Segment {idx_str}: Saved using FlowSE denoised output.")
-
-        # 2. SepReformer가 적용된 'enhanced_audio'가 있는지 확인
-        elif seg.get("is_separated", False) and "enhanced_audio" in seg:
+        
+        # 1. SepReformer가 적용된 'enhanced_audio'가 있는지 확인
+        if seg.get("is_separated", False) and "enhanced_audio" in seg:
             # Numpy array -> Pydub AudioSegment 변환
             enhanced_waveform = seg["enhanced_audio"]
-
+            
             # float32 (-1.0 ~ 1.0) -> int16 범위로 변환
             # 클리핑 방지를 위해 clip 적용
             enhanced_waveform = np.clip(enhanced_waveform, -1.0, 1.0)
             wav_int16 = (enhanced_waveform * 32767).astype(np.int16)
-
+            
             target_segment = PydubAudioSegment(
                 wav_int16.tobytes(),
                 frame_rate=sample_rate,
@@ -1981,13 +1837,13 @@ def export_segments_with_enhanced_audio(audio_info, segment_list, save_dir, audi
                 channels=1
             )
             # logger.debug(f"Segment {idx_str}: Saved using SepReformer output.")
-
+            
         else:
-            # 3. 적용되지 않은 경우 원본에서 추출
+            # 2. 적용되지 않은 경우 원본에서 추출
             start_ms = int(seg["start"] * 1000)
             end_ms = int(seg["end"] * 1000)
             target_segment = full_audio_segment[start_ms:end_ms]
-
+            
         # MP3 저장
         target_segment.export(file_path, format="mp3")
         
@@ -1996,11 +1852,7 @@ def main_process(audio_path, save_path=None, audio_name=None,
                  LLM = "",
                  use_demucs = False,
                  use_sepreformer = False,
-                 overlap_threshold = 1.0,
-                 flowse_denoiser = None,
-                 sepreformer_separator = None,
-                 embedding_model = None,
-                 panns_model = None):
+                 overlap_threshold = 1.0):
 
     if not audio_path.endswith((".mp3", ".wav", ".flac", ".m4a", ".aac")):
         logger.warning(f"Unsupported file type: {audio_path}")
@@ -2010,7 +1862,7 @@ def main_process(audio_path, save_path=None, audio_name=None,
     audio_name = audio_name or os.path.splitext(os.path.basename(audio_path))[0]
     suffix = "dia3" if args.dia3 else "ori"
     save_path = save_path or os.path.join(
-        os.path.dirname(audio_path), "_final", f"-sepreformer-{args.sepreformer}" +f"-demucs-{args.demucs}"  + f"-vad-{do_vad}"+ f"-diaModel-{suffix}"
+        os.path.dirname(audio_path), "_final", f"-sepreformer-{args.sepreformer}" + f"-vad-{do_vad}"+ f"-diaModel-{suffix}"
         # initial prompt off or on
         + f"-initPrompt-{args.initprompt}"
         + f"-merge_gap-{args.merge_gap}" +f"-seg_th-{args.seg_th}"+ f"-cl_min-{args.min_cluster_size}" +f"-cl-th-{args.clust_th}"+ f"-LLM-{LLM}", audio_name
@@ -2067,26 +1919,16 @@ def main_process(audio_path, save_path=None, audio_name=None,
     segment_list = split_long_segments(segment_list)
     ######################
 
-    # [수정됨] Step 3를 Step 2.5보다 먼저 실행!
-    # Step 3: Background Music Detection and Removal
-    # SepReformer가 실행되기 전에 전체 오디오를 먼저 깨끗하게 만듭니다.
-    logger.info("Step 3: Background Music Detection and Removal")
-    # padding을 주어 ASR 타임스탬프 오차 범위를 커버
-    audio, segment_demucs_flags = preprocess_segments_with_demucs(segment_list, audio, panns_model=panns_model, use_demucs=use_demucs, padding=0.5)
-
-    # [수정됨] 이제 깨끗해진 audio를 가지고 SepReformer 실행
     # Step 2.5: Overlap control using SepReformer
     logger.info("Step 2.5: Overlap Control with SepReformer")
     separation_time = 0.0
-    if use_sepreformer and sepreformer_separator is not None and embedding_model is not None:
+    if use_sepreformer:
         separation_start = time.time()
-        # 여기서 audio는 이미 Demucs 처리가 된 상태입니다.
         audio, segment_list = process_overlapping_segments_with_separation(
             segment_list,
             audio,
             overlap_threshold=overlap_threshold,
-            separator=sepreformer_separator,
-            embedding_model=embedding_model
+            sepreformer_path="/mnt/ddn/kyudan/Audio-data-centric/SepReformer"
         )
         separation_end = time.time()
         separation_time = separation_end - separation_start
@@ -2096,7 +1938,13 @@ def main_process(audio_path, save_path=None, audio_name=None,
         logger.info(f"SepReformer separation - Processing time: {separation_time:.2f}s, RT factor: {separation_rt:.4f}")
     else:
         logger.info("SepReformer overlap separation skipped (flag disabled)")
-        
+
+
+
+    # Step 3: Background Music Detection and Removal (preprocess segments before ASR)
+    logger.info("Step 3: Background Music Detection and Removal")
+    audio, segment_demucs_flags = preprocess_segments_with_demucs(segment_list, audio, use_demucs=use_demucs)
+
     logger.info("Step 4: ASR (Automatic Speech Recognition)")
     if args.ASRMoE:
         asr_start = time.time()
@@ -2165,23 +2013,6 @@ def main_process(audio_path, save_path=None, audio_name=None,
     # Calculate Qwen3-Omni RT factor
     caption_rt = caption_time / audio_duration if audio_duration > 0 else 0
 
-    # Step 4.6: Apply FlowSE denoising to sepreformer segments (if enabled)
-    denoise_time = 0.0
-    if args.sepreformer and flowse_denoiser is not None:
-        logger.info("Step 4.6: Applying FlowSE denoising to sepreformer segments")
-        filtered_list, denoise_time = apply_flowse_denoising(
-            filtered_list,
-            audio,
-            save_path,
-            denoiser=flowse_denoiser,
-            use_asr_moe=args.ASRMoE
-        )
-    else:
-        logger.info("Step 4.6: FlowSE denoising skipped (sepreformer flag disabled or denoiser not loaded)")
-
-    # Calculate FlowSE denoising RT factor
-    denoise_rt = denoise_time / audio_duration if audio_duration > 0 else 0
-
     # Print all timing information
     print(f"\n{'='*60}")
     print(f"Audio duration: {audio_duration:.2f} seconds ({audio_duration/60:.2f} minutes)")
@@ -2208,11 +2039,6 @@ def main_process(audio_path, save_path=None, audio_name=None,
         print(f"Qwen3-Omni Caption:")
         print(f"  - Processing time: {caption_time:.2f} seconds")
         print(f"  - RT factor: {caption_rt:.4f}")
-        print(f"{'='*60}")
-    if args.sepreformer and denoise_time > 0:
-        print(f"FlowSE Denoising:")
-        print(f"  - Processing time: {denoise_time:.2f} seconds")
-        print(f"  - RT factor: {denoise_rt:.4f}")
         print(f"{'='*60}")
     print()
 
@@ -2282,14 +2108,6 @@ def main_process(audio_path, save_path=None, audio_name=None,
             "processing_time_seconds": separation_time,
             "rt_factor": separation_rt,
             "overlap_threshold_seconds": overlap_threshold,
-            "enabled": True
-        }
-
-    # Add FlowSE denoising metadata if enabled
-    if args.sepreformer and denoise_time > 0:
-        output_data["metadata"]["flowse_denoising"] = {
-            "processing_time_seconds": denoise_time,
-            "rt_factor": denoise_rt,
             "enabled": True
         }
 
@@ -2592,64 +2410,6 @@ if __name__ == "__main__":
     diar_model = SortformerEncLabelModel.from_pretrained("nvidia/diar_sortformer_4spk-v1")
     diar_model.eval()
 
-    # Pyannote embedding model 초기화 (sepreformer가 활성화된 경우에만)
-    embedding_model = None
-    if args.sepreformer:
-        logger.debug(" * Loading Pyannote Embedding Model")
-        try:
-            from pyannote.audio import Model as PyannoteModel
-            embedding_model = PyannoteModel.from_pretrained("pyannote/embedding", use_auth_token=cfg["huggingface_token"])
-            embedding_model = embedding_model.to(device)
-            logger.debug(" * Pyannote Embedding Model loaded successfully")
-        except Exception as e:
-            logger.error(f" * Failed to load Pyannote Embedding Model: {e}")
-            embedding_model = None
-
-    # SepReformer separator 초기화 (sepreformer가 활성화된 경우에만)
-    sepreformer_separator = None
-    if args.sepreformer:
-        logger.debug(" * Loading SepReformer Separator Model")
-        try:
-            sepreformer_separator = SepReformerSeparator(
-                sepreformer_path="/mnt/ddn/kyudan/Audio-data-centric/SepReformer",
-                device=device
-            )
-            logger.debug(" * SepReformer Separator loaded successfully")
-        except Exception as e:
-            logger.error(f" * Failed to load SepReformer Separator: {e}")
-            sepreformer_separator = None
-
-    # FlowSE denoiser 초기화 (sepreformer가 활성화된 경우에만)
-    flowse_denoiser = None
-    if args.sepreformer:
-        logger.debug(" * Loading FlowSE Denoiser Model")
-        try:
-            flowse_denoiser = FlowSEDenoiser(
-                checkpoint_path="/mnt/ddn/kyudan/Audio-data-centric/FlowSE/ckpts/best.pt.tar",
-                tokenizer_path="/mnt/ddn/kyudan/Audio-data-centric/FlowSE/Emilia_ZH_EN_pinyin/vocab.txt",
-                vocoder_path="/mnt/ddn/kyudan/Audio-data-centric/FlowSE/vocos-mel-24khz",
-                use_cuda=(device_name == "cuda")
-            )
-            logger.debug(" * FlowSE Denoiser loaded successfully")
-        except Exception as e:
-            logger.error(f" * Failed to load FlowSE Denoiser: {e}")
-            flowse_denoiser = None
-
-    # PANNs model 초기화 (배경음악 검출용)
-    panns_model = None
-    if args.demucs:
-        logger.debug(" * Loading PANNs Model for background music detection")
-        try:
-            panns_data_dir = '/mnt/ddn/kyudan/panns_data'
-            os.makedirs(panns_data_dir, exist_ok=True)
-            os.environ['PANNS_DATA'] = panns_data_dir
-            checkpoint_path = os.path.join(panns_data_dir, 'Cnn14_mAP=0.431.pth')
-            panns_model = AudioTagging(checkpoint_path=checkpoint_path, device='cuda' if torch.cuda.is_available() else 'cpu')
-            logger.debug(" * PANNs Model loaded successfully")
-        except Exception as e:
-            logger.error(f" * Failed to load PANNs Model: {e}")
-            panns_model = None
-
     logger.debug("All models loaded")
 
     supported_languages = cfg["language"]["supported"]
@@ -2692,8 +2452,6 @@ if __name__ == "__main__":
 
 
         main_process(path, do_vad=args.vad, LLM=args.LLM, use_demucs=args.demucs,
-                     use_sepreformer=args.sepreformer, overlap_threshold=args.overlap_threshold,
-                     flowse_denoiser=flowse_denoiser, sepreformer_separator=sepreformer_separator,
-                     embedding_model=embedding_model, panns_model=panns_model)
+                     use_sepreformer=args.sepreformer, overlap_threshold=args.overlap_threshold)
 end_time = time.time()
 print("Total time:", end_time - start_time)
