@@ -53,8 +53,8 @@ qwen3omni_flags=(--no-qwen3omni)
 # SepReformer 겹침 음성 분리 플래그
 # --sepreformer: SepReformer를 사용한 겹침 음성 분리 활성화
 # --no-sepreformer: 겹침 음성 분리 비활성화 (기본값)
-sepreformer_flags=(--sepreformer)
-#sepreformer_flags=(--sepreformer --no-sepreformer)
+#sepreformer_flags=(--sepreformer)
+sepreformer_flags=(--sepreformer --no-sepreformer)
 # SepReformer overlap threshold (겹침으로 판단할 최소 시간, 초 단위)
 overlap_thresholds=(1.0)
 # 추가된 MERGE_GAP 조합

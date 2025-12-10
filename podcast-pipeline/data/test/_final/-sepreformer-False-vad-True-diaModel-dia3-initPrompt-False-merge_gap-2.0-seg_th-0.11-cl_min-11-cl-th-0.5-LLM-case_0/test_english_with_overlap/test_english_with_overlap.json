@@ -1,0 +1,251 @@
+{
+  "metadata": {
+    "audio_duration_seconds": 120.0,
+    "audio_duration_minutes": 2.0,
+    "vad_sortformer": {
+      "processing_time_seconds": 0.7393133640289307,
+      "rt_factor": 0.006160944700241089
+    },
+    "whisper_large_v3": {
+      "processing_time_seconds": 7.549457311630249,
+      "rt_factor": 0.0629121442635854
+    },
+    "total_segments": 26
+  },
+  "segments": [
+    {
+      "text": " Mr. Franklin?",
+      "start": 0.0,
+      "end": 0.88,
+      "speaker": "SPEAKER_00",
+      "language": "en",
+      "sepreformer": false,
+      "is_separated": false
+    },
+    {
+      "text": " Yeah.",
+      "start": 0.48,
+      "end": 1.44,
+      "speaker": "SPEAKER_01",
+      "language": "en",
+      "sepreformer": false,
+      "is_separated": false
+    },
+    {
+      "text": " Tyra Glass here.",
+      "start": 1.12,
+      "end": 2.8,
+      "speaker": "SPEAKER_00",
+      "language": "en",
+      "sepreformer": false,
+      "is_separated": false
+    },
+    {
+      "text": " You're the emcee on the show, Ira. I am the emcee on the show, yes. Oh, great. Ira, are you Ira? Ira?",
+      "start": 2.8,
+      "end": 7.52,
+      "speaker": "SPEAKER_01",
+      "language": "en",
+      "sepreformer": false,
+      "is_separated": false
+    },
+    {
+      "text": " I am the MC on the show, yes. Oh, great.",
+      "start": 4.24,
+      "end": 6.0,
+      "speaker": "SPEAKER_00",
+      "language": "en",
+      "sepreformer": false,
+      "is_separated": false
+    },
+    {
+      "text": " IRA. IRA.",
+      "start": 7.36,
+      "end": 8.72,
+      "speaker": "SPEAKER_00",
+      "language": "en",
+      "sepreformer": false,
+      "is_separated": false
+    },
+    {
+      "text": " Oh, great. Now, hold on one second there. Don't go away.",
+      "start": 8.48,
+      "end": 11.440000000000001,
+      "speaker": "SPEAKER_01",
+      "language": "en",
+      "sepreformer": false,
+      "is_separated": false
+    },
+    {
+      "text": " Hello?",
+      "start": 12.4,
+      "end": 13.68,
+      "speaker": "SPEAKER_01",
+      "language": "en",
+      "sepreformer": false,
+      "is_separated": false
+    },
+    {
+      "text": " Sheldon, call me after 3 o'clock. I've got great news for you. Ira...",
+      "start": 14.48,
+      "end": 18.32,
+      "speaker": "SPEAKER_01",
+      "language": "en",
+      "sepreformer": false,
+      "is_separated": false
+    },
+    {
+      "text": " Yes.",
+      "start": 18.88,
+      "end": 19.36,
+      "speaker": "SPEAKER_00",
+      "language": "en",
+      "sepreformer": false,
+      "is_separated": false
+    },
+    {
+      "text": " So, listen, Tony, if the phone rings, take it in the back, and then come out and tell me who it is. Just say Joe's being with a camera crew. Just for about ten minutes. We'll do about five minutes, ten minutes, right, Ira? That's right.",
+      "start": 18.96,
+      "end": 33.52,
+      "speaker": "SPEAKER_01",
+      "language": "en",
+      "sepreformer": false,
+      "is_separated": false
+    },
+    {
+      "text": " That's right.",
+      "start": 33.2,
+      "end": 33.84,
+      "speaker": "SPEAKER_00",
+      "language": "en",
+      "sepreformer": false,
+      "is_separated": false
+    },
+    {
+      "text": " Well, you know what?",
+      "start": 40.08,
+      "end": 41.28,
+      "speaker": "SPEAKER_02",
+      "language": "en",
+      "sepreformer": false,
+      "is_separated": false
+    },
+    {
+      "text": " Great thing about starting a new show is utter anonymity. Nobody really knows what to expect from you.",
+      "start": 41.6,
+      "end": 49.92,
+      "speaker": "SPEAKER_02",
+      "language": "en",
+      "sepreformer": false,
+      "is_separated": false
+    },
+    {
+      "text": " This interviewee did not know us from Adam.",
+      "start": 50.64,
+      "end": 53.28,
+      "speaker": "SPEAKER_02",
+      "language": "en",
+      "sepreformer": false,
+      "is_separated": false
+    },
+    {
+      "text": " Okay, well, what? About a minute. We're one minute five into the new show. Right now, it is stretching in front of us. A perfect future.",
+      "start": 54.96,
+      "end": 63.28,
+      "speaker": "SPEAKER_02",
+      "language": "en",
+      "sepreformer": false,
+      "is_separated": false
+    },
+    {
+      "text": " Yet to be fulfilled. An uncharted little world. Little baby coming into the world. No little scars or anything.",
+      "start": 63.6,
+      "end": 70.48,
+      "speaker": "SPEAKER_02",
+      "language": "en",
+      "sepreformer": false,
+      "is_separated": false
+    },
+    {
+      "text": " Nobody hearing my words right now is thinking, oh, man.",
+      "start": 72.0,
+      "end": 75.2,
+      "speaker": "SPEAKER_02",
+      "language": "en",
+      "sepreformer": false,
+      "is_separated": false
+    },
+    {
+      "text": " Remember that show? Back when it used to be good? Well, sure, I never missed that show. Back in the old days, back in the first couple years, before it got so-called popular...",
+      "start": 75.84,
+      "end": 86.32000000000001,
+      "speaker": "SPEAKER_02",
+      "language": "en",
+      "sepreformer": false,
+      "is_separated": false
+    },
+    {
+      "text": " Back when it was still good...",
+      "start": 87.04,
+      "end": 88.64,
+      "speaker": "SPEAKER_02",
+      "language": "en",
+      "sepreformer": false,
+      "is_separated": false
+    },
+    {
+      "text": " Actually, I think that force, that human desire...",
+      "start": 91.36,
+      "end": 95.52,
+      "speaker": "SPEAKER_02",
+      "language": "en",
+      "sepreformer": false,
+      "is_separated": false
+    },
+    {
+      "text": " to say that.",
+      "start": 96.96,
+      "end": 98.24,
+      "speaker": "SPEAKER_02",
+      "language": "en",
+      "sepreformer": false,
+      "is_separated": false
+    },
+    {
+      "text": " is so strong to say that i was there i was there back when that show was good that force is so strong it is so basic to who we are as people",
+      "start": 98.8,
+      "end": 105.84,
+      "speaker": "SPEAKER_02",
+      "language": "en",
+      "sepreformer": false,
+      "is_separated": false
+    },
+    {
+      "text": " Then I know... Okay, what are we? We are two minutes into the program.",
+      "start": 106.4,
+      "end": 111.04,
+      "speaker": "SPEAKER_02",
+      "language": "en",
+      "sepreformer": false,
+      "is_separated": false
+    },
+    {
+      "text": " I know that somewhere out there,",
+      "start": 111.6,
+      "end": 114.55999999999999,
+      "speaker": "SPEAKER_02",
+      "language": "en",
+      "sepreformer": false,
+      "is_separated": false
+    },
+    {
+      "text": " One or two of you are saying, oh, sure, I used to listen to that show back in the first...",
+      "start": 115.04,
+      "end": 119.99000000000001,
+      "speaker": "SPEAKER_02",
+      "language": "en",
+      "sepreformer": false,
+      "is_separated": false
+    }
+  ]
+}
