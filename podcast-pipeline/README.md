@@ -245,22 +245,83 @@ podcast-pipeline/
 
 If you use this pipeline in your research, please cite the relevant papers:
 
-- FlowSE: [Add FlowSE citation]
-- Demucs: [Add Demucs citation]
-- Pyannote: [Add Pyannote citation]
-- NeMo: [Add NeMo citation]
+### FlowSE
+```bibtex
+@misc{wang2025flowseefficienthighqualityspeech,
+  title={FlowSE: Efficient and High-Quality Speech Enhancement via Flow Matching},
+  author={Ziqian Wang and Zikai Liu and Xinfa Zhu and Yike Zhu and Mingshuai Liu and Jun Chen and Longshuai Xiao and Chao Weng and Lei Xie},
+  year={2025},
+  eprint={2505.19476},
+  archivePrefix={arXiv},
+  primaryClass={eess.AS},
+  url={https://arxiv.org/abs/2505.19476}
+}
+```
+
+### Demucs
+```bibtex
+@inproceedings{rouard2022hybrid,
+  title={Hybrid Transformers for Music Source Separation},
+  author={Rouard, Simon and Massa, Francisco and D{\'e}fossez, Alexandre},
+  booktitle={ICASSP 23},
+  year={2023}
+}
+
+@inproceedings{defossez2021hybrid,
+  title={Hybrid Spectrogram and Waveform Source Separation},
+  author={D{\'e}fossez, Alexandre},
+  booktitle={Proceedings of the ISMIR 2021 Workshop on Music Source Separation},
+  year={2021}
+}
+```
+
+### Pyannote
+```bibtex
+@inproceedings{Plaquet23,
+  author={Alexis Plaquet and Hervé Bredin},
+  title={{Powerset multi-class cross entropy loss for neural speaker diarization}},
+  year={2023},
+  booktitle={Proc. INTERSPEECH 2023}
+}
+
+@inproceedings{Bredin23,
+  author={Hervé Bredin},
+  title={{pyannote.audio 2.1 speaker diarization pipeline: principle, benchmark, and recipe}},
+  year={2023},
+  booktitle={Proc. INTERSPEECH 2023}
+}
+```
+
+### NeMo
+For NeMo citation, please refer to: [NVIDIA NeMo GitHub](https://github.com/NVIDIA-NeMo/NeMo)
 
 ## License
 
-[Add your license information]
+This project is licensed under the MIT License.
 
 ## Contributing
 
-Contributions are welcome! Please:
-1. Fork the repository
-2. Create a feature branch
-3. Submit a pull request
+Contributions are welcome! Please follow these steps:
+
+1. **Fork the repository**
+2. **Create a feature branch**
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+3. **Commit your changes**
+   ```bash
+   git commit -m "Add: your feature description"
+   ```
+4. **Push to your branch**
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+5. **Submit a pull request**
 
 ## Contact
 
-[Add contact information or links]
+For questions or collaboration inquiries, please contact:
+
+**Email**: kyudan@kaist.ac.kr 
+
+or give it a issue.

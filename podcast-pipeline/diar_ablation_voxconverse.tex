@@ -1,0 +1,15 @@
+\begin{table}[t]
+\centering
+\resizebox{0.5\textwidth}{!}{%
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Model} & \textbf{DER (\%)} & \textbf{JER (\%)} & \makecell[c]{\textbf{DER}\\\textbf{($\le$0.5s, \%)}} & \makecell[c]{\textbf{DER}\\\textbf{($\le$1.0s, \%)}} & \makecell[c]{\textbf{DER}\\\textbf{(turn, \%)}} & \makecell[c]{\textbf{RTF}} \\
+\midrule
+sortformer\_v1 & 7.16 & 14.69 & 21.07 & 21.07 & 16.87 & 0.006 \\
+pyannote31 & 8.40 & 17.68 & 22.91 & 22.93 & 20.21 & 0.051 \\
+\bottomrule
+\end{tabular}%
+}
+\caption{Diarization model ablation on VoxConverse (common subset, $\le speakers). Lower is better.}
+\label{tab:diar_ablation_voxconverse}
+\end{table}

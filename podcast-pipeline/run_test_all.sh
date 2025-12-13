@@ -39,7 +39,7 @@ ASRMoE=(--no-ASRMoE)
 # --demucs: PANNs로 배경음악 검출 후 Demucs로 보컬 추출
 # --no-demucs: 배경음악 제거 안 함 (기본값)
 #demucs_flags=(--demucs)
-demucs_flags=(--demucs)
+demucs_flags=(--no-demucs)
 # WhisperX 단어 수준 타임스탬프 플래그
 # --whisperx_word_timestamps: WhisperX 정렬을 통한 단어 수준 타임스탬프 활성화
 # --no-whisperx_word_timestamps: 단어 수준 타임스탬프 비활성화 (기본값)
@@ -50,6 +50,11 @@ whisperx_flags=(--no-whisperx_word_timestamps)
 # --no-qwen3omni: 오디오 캡션 생성 비활성화 (기본값)
 qwen3omni_flags=(--no-qwen3omni)
 #qwen3omni_flags=(--qwen3omni --no-qwen3omni)
+# Context-aware 캡셔닝 플래그
+# --context_caption: 이전 2개 segment를 context로 사용한 캡셔닝 활성화
+# --no-context_caption: context 없이 단일 segment만 캡셔닝 (기본값)
+context_caption_flags=(--no-context_caption)
+#context_caption_flags=(--context_caption --no-context_caption)
 # SepReformer 겹침 음성 분리 플래그
 # --sepreformer: SepReformer를 사용한 겹침 음성 분리 활성화
 # --no-sepreformer: 겹침 음성 분리 비활성화 (기본값)
@@ -75,18 +80,20 @@ for folder in "${folders[@]}"; do
                     for demucs in "${demucs_flags[@]}"; do
                       for whisperx in "${whisperx_flags[@]}"; do
                         for qwen3omni in "${qwen3omni_flags[@]}"; do
-                          for sepreformer in "${sepreformer_flags[@]}"; do
-                            for overlap_th in "${overlap_thresholds[@]}"; do
-                              echo "▶ Folder: ${folder}, ${vad}, ${dia3}, ${initprompt}, LLM=${llm}, seg_th=${seg}, min_cluster_size=${min_cluster}, clust_th=${clust}, merge_gap=${merge_gap}, ${asrmoe}, ${demucs}, ${whisperx}, ${qwen3omni}, ${sepreformer}, overlap_th=${overlap_th}, korean=${korean}"
-                              /mnt/fr20tb/kyudan/miniforge3/envs/dataset/bin/python main_original_ASR_MoE.py \
-                                --input_folder_path "${folder}" \
-                                ${vad} ${dia3} ${initprompt} ${asrmoe} ${demucs} ${whisperx} ${qwen3omni} ${sepreformer} \
-                                --LLM "${llm}" \
-                                --seg_th "${seg}" \
-                                --min_cluster_size "${min_cluster}" \
-                                --clust_th "${clust}" \
-                                --merge_gap "${merge_gap}" \
-                                --overlap_threshold "${overlap_th}"
+                          for context_caption in "${context_caption_flags[@]}"; do
+                            for sepreformer in "${sepreformer_flags[@]}"; do
+                              for overlap_th in "${overlap_thresholds[@]}"; do
+                                echo "▶ Folder: ${folder}, ${vad}, ${dia3}, ${initprompt}, LLM=${llm}, seg_th=${seg}, min_cluster_size=${min_cluster}, clust_th=${clust}, merge_gap=${merge_gap}, ${asrmoe}, ${demucs}, ${whisperx}, ${qwen3omni}, ${context_caption}, ${sepreformer}, overlap_th=${overlap_th}, korean=${korean}"
+                                /mnt/fr20tb/kyudan/miniforge3/envs/dataset/bin/python main_original_ASR_MoE.py \
+                                  --input_folder_path "${folder}" \
+                                  ${vad} ${dia3} ${initprompt} ${asrmoe} ${demucs} ${whisperx} ${qwen3omni} ${context_caption} ${sepreformer} \
+                                  --LLM "${llm}" \
+                                  --seg_th "${seg}" \
+                                  --min_cluster_size "${min_cluster}" \
+                                  --clust_th "${clust}" \
+                                  --merge_gap "${merge_gap}" \
+                                  --overlap_threshold "${overlap_th}"
+                              done
                             done
                           done
                         done
