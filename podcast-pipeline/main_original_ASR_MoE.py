@@ -2267,6 +2267,9 @@ def main_process(audio_path, save_path=None, audio_name=None,
         # 1. 'enhanced_audio' (오디오 행렬) 키가 있으면 삭제
         if "enhanced_audio" in clean_item:
             del clean_item["enhanced_audio"]
+        # 1-2. denoised_audio_path는 최종 JSON에 포함하지 않음
+        if "denoised_audio_path" in clean_item:
+            del clean_item["denoised_audio_path"]
             
         # 2. (혹시 모를 에러 방지) Numpy float/int 타입을 Python native 타입으로 변환
         for k, v in clean_item.items():
