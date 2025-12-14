@@ -72,6 +72,31 @@ from simple_denoise import FlowSEDenoiser
 
 warnings.filterwarnings("ignore")
 
+def _apply_sortformer_segment_padding_from_args(
+    df: pd.DataFrame, args, logger, audio_duration: float | None = None
+) -> pd.DataFrame:
+    if df is None or df.empty:
+        return df
+    if not getattr(args, "sortformer_param", False):
+        return df
+
+    pad_onset = float(getattr(args, "sortformer_pad_onset", 0.0))
+    pad_offset = float(getattr(args, "sortformer_pad_offset", -0.08))
+
+    if pad_onset == 0.0 and pad_offset == 0.0:
+        return df
+
+    df = df.copy()
+    df["start"] = (df["start"].astype(float) + pad_onset).clip(lower=0.0)
+    df["end"] = df["end"].astype(float) + pad_offset
+    if audio_duration is not None and audio_duration > 0:
+        df["end"] = df["end"].clip(lower=0.0, upper=float(audio_duration))
+    else:
+        df["end"] = df["end"].clip(lower=0.0)
+    df["end"] = df[["start", "end"]].max(axis=1)
+
+    return df
+
 
 def main_process(audio_path, save_path=None, audio_name=None,
                  do_vad = False,
@@ -94,7 +119,13 @@ def main_process(audio_path, save_path=None, audio_name=None,
     audio_name = audio_name or os.path.splitext(os.path.basename(audio_path))[0]
     suffix = "dia3" if args.dia3 else "ori"
     save_path = save_path or os.path.join(
-        os.path.dirname(audio_path), "_final", f"-sepreformer-{args.sepreformer}" +f"-demucs-{args.demucs}"  + f"-vad-{do_vad}"+ f"-diaModel-{suffix}"
+        os.path.dirname(audio_path),
+        "_final",
+        f"-sortformerParam-{args.sortformer_param}"
+        + f"-sepreformer-{args.sepreformer}"
+        + f"-demucs-{args.demucs}"
+        + f"-vad-{do_vad}"
+        + f"-diaModel-{suffix}"
         # initial prompt off or on
         + f"-initPrompt-{args.initprompt}"
         + f"-merge_gap-{args.merge_gap}" +f"-seg_th-{args.seg_th}"+ f"-cl_min-{args.min_cluster_size}" +f"-cl-th-{args.clust_th}"+ f"-LLM-{LLM}", audio_name
@@ -130,6 +161,9 @@ def main_process(audio_path, save_path=None, audio_name=None,
             if not chunk_df.empty:
                 chunk_df["start"] += chunk["offset"]
                 chunk_df["end"] += chunk["offset"]
+                chunk_df = _apply_sortformer_segment_padding_from_args(
+                    chunk_df, args=args, logger=logger, audio_duration=audio_duration
+                )
             diarization_frames.append(chunk_df)
     finally:
         if temp_chunk_dir:
@@ -542,6 +576,29 @@ if __name__ == "__main__":
         type=float,
         default=1.0,
         help="Minimum overlap duration in seconds to trigger SepReformer separation",
+    )
+
+    # Sortformer diarization segment boundary adjustment (optional)
+    parser.add_argument(
+        "--sortformer-param",
+        "--sortformerParam",
+        "--sortformerParma",
+        dest="sortformer_param",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Enable Sortformer segment boundary adjustment (pad_offset/pad_onset applied to final segments).",
+    )
+    parser.add_argument(
+        "--sortformer-pad-offset",
+        type=float,
+        default=-0.08,
+        help="Seconds to add to segment end time (negative pulls ends earlier). Only used with --sortformer-param.",
+    )
+    parser.add_argument(
+        "--sortformer-pad-onset",
+        type=float,
+        default=0.0,
+        help="Seconds to add to segment start time (negative pulls starts earlier). Only used with --sortformer-param.",
     )
 
 

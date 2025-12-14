@@ -59,13 +59,17 @@ context_caption_flags=(--no-context_caption)
 # --sepreformer: SepReformer를 사용한 겹침 음성 분리 활성화
 # --no-sepreformer: 겹침 음성 분리 비활성화 (기본값)
 #sepreformer_flags=(--sepreformer)
-sepreformer_flags=(--sepreformer)
+sepreformer_flags=(--no-sepreformer)
 # SepReformer overlap threshold (겹침으로 판단할 최소 시간, 초 단위)
 overlap_thresholds=(1.0)
 # 추가된 MERGE_GAP 조합
 # merge_gaps=(0.5 1 1.5 2)
 # 0.5와 2가 똑같이 나옴.
 merge_gaps=(2)
+
+# Sortformer segment boundary adjustment (end time -0.08s)
+sortformer_param_flags=(--sortformer-param)
+sortformer_pad_offset_values=(-0.24)
 
 for folder in "${folders[@]}"; do
   for vad in "${vad_flags[@]}"; do
@@ -83,16 +87,20 @@ for folder in "${folders[@]}"; do
                           for context_caption in "${context_caption_flags[@]}"; do
                             for sepreformer in "${sepreformer_flags[@]}"; do
                               for overlap_th in "${overlap_thresholds[@]}"; do
-                                echo "▶ Folder: ${folder}, ${vad}, ${dia3}, ${initprompt}, LLM=${llm}, seg_th=${seg}, min_cluster_size=${min_cluster}, clust_th=${clust}, merge_gap=${merge_gap}, ${asrmoe}, ${demucs}, ${whisperx}, ${qwen3omni}, ${context_caption}, ${sepreformer}, overlap_th=${overlap_th}, korean=${korean}"
-                                /mnt/fr20tb/kyudan/miniforge3/envs/dataset/bin/python main_original_ASR_MoE.py \
-                                  --input_folder_path "${folder}" \
-                                  ${vad} ${dia3} ${initprompt} ${asrmoe} ${demucs} ${whisperx} ${qwen3omni} ${context_caption} ${sepreformer} \
-                                  --LLM "${llm}" \
-                                  --seg_th "${seg}" \
-                                  --min_cluster_size "${min_cluster}" \
-                                  --clust_th "${clust}" \
-                                  --merge_gap "${merge_gap}" \
-                                  --overlap_threshold "${overlap_th}"
+                                for sortformer_pad_offset in "${sortformer_pad_offset_values[@]}"; do
+                                  echo "▶ Folder: ${folder}, ${vad}, ${dia3}, ${initprompt}, LLM=${llm}, seg_th=${seg}, min_cluster_size=${min_cluster}, clust_th=${clust}, merge_gap=${merge_gap}, ${asrmoe}, ${demucs}, ${whisperx}, ${qwen3omni}, ${context_caption}, ${sepreformer}, ${sortformer_param_flags[*]}, sortformer_pad_offset=${sortformer_pad_offset}, overlap_th=${overlap_th}, korean=${korean}"
+                                  /mnt/fr20tb/kyudan/miniforge3/envs/dataset/bin/python main_original_ASR_MoE.py \
+                                    --input_folder_path "${folder}" \
+                                    ${vad} ${dia3} ${initprompt} ${asrmoe} ${demucs} ${whisperx} ${qwen3omni} ${context_caption} ${sepreformer} \
+                                    ${sortformer_param_flags[@]} \
+                                    --sortformer-pad-offset "${sortformer_pad_offset}" \
+                                    --LLM "${llm}" \
+                                    --seg_th "${seg}" \
+                                    --min_cluster_size "${min_cluster}" \
+                                    --clust_th "${clust}" \
+                                    --merge_gap "${merge_gap}" \
+                                    --overlap_threshold "${overlap_th}"
+                                done
                               done
                             done
                           done
