@@ -147,6 +147,20 @@ class SepReformerSeparator:
                 src1 = librosa.resample(src1, orig_sr=8000, target_sr=sample_rate)
                 src2 = librosa.resample(src2, orig_sr=8000, target_sr=sample_rate)
 
+                # 리샘플링 후 길이를 원본과 정확히 맞춤 (반올림 오차 보정)
+                target_length = len(audio_segment)
+                if len(src1) != target_length:
+                    if len(src1) > target_length:
+                        src1 = src1[:target_length]
+                    else:
+                        src1 = np.pad(src1, (0, target_length - len(src1)), mode='constant')
+
+                if len(src2) != target_length:
+                    if len(src2) > target_length:
+                        src2 = src2[:target_length]
+                    else:
+                        src2 = np.pad(src2, (0, target_length - len(src2)), mode='constant')
+
             return src1, src2
 
         except Exception as e:
@@ -332,16 +346,12 @@ def process_overlapping_segments_with_separation(segment_list, audio, overlap_th
         return np.sum(audio_segment**2)
     # -------------------------------------------------------------------------
 
-    # 1. 모든 세그먼트에 대해 초기 'enhanced_audio'를 원본 오디오로 초기화
+    # 1. 초기화: 모든 세그먼트에 대해 'sepreformer' 플래그만 설정
+    #    enhanced_audio는 나중에 필요시 생성 (겹치지 않는 세그먼트는 원본 사용)
     waveform = audio["waveform"]
     sample_rate = audio["sample_rate"]
 
     for seg in segment_list:
-        if 'enhanced_audio' not in seg:
-            start_frame = int(seg['start'] * sample_rate)
-            end_frame = int(seg['end'] * sample_rate)
-            seg['enhanced_audio'] = waveform[start_frame:end_frame].copy()
-
         if 'sepreformer' not in seg:
             seg['sepreformer'] = False
 
@@ -476,24 +486,93 @@ def process_overlapping_segments_with_separation(segment_list, audio, overlap_th
         seg2_part = match_target_amplitude(seg2_part, seg2_target_rms)
         # ---------------------------------------------------------------------
 
-        # 1) Seg1 업데이트
-        seg1_start_global = int(seg1['start'] * sample_rate)
-        rel_start_1 = start_frame - seg1_start_global
+        # 분리된 오디오를 임시 저장 (나중에 전체 재구성에 사용)
+        if 'separated_regions' not in seg1:
+            seg1['separated_regions'] = []
+        if 'separated_regions' not in seg2:
+            seg2['separated_regions'] = []
 
-        limit_len_1 = min(len(seg1_part), len(seg1['enhanced_audio'][rel_start_1:]))
-        if limit_len_1 > 0:
-            seg1['enhanced_audio'][rel_start_1 : rel_start_1 + limit_len_1] = seg1_part[:limit_len_1]
-            seg1['sepreformer'] = True
-            logger.info(f"  ✓ Updated Seg1 enhanced_audio with volume-adjusted separated audio")
+        seg1['separated_regions'].append({
+            'start': overlap_start,
+            'end': overlap_end,
+            'audio': seg1_part
+        })
+        seg2['separated_regions'].append({
+            'start': overlap_start,
+            'end': overlap_end,
+            'audio': seg2_part
+        })
+        seg1['sepreformer'] = True
+        seg2['sepreformer'] = True
 
-        # 2) Seg2 업데이트
-        seg2_start_global = int(seg2['start'] * sample_rate)
-        rel_start_2 = start_frame - seg2_start_global
+        logger.info(f"  ✓ Stored separated audio for Seg1 and Seg2 (overlap: {overlap_start:.2f}-{overlap_end:.2f})")
 
-        limit_len_2 = min(len(seg2_part), len(seg2['enhanced_audio'][rel_start_2:]))
-        if limit_len_2 > 0:
-            seg2['enhanced_audio'][rel_start_2 : rel_start_2 + limit_len_2] = seg2_part[:limit_len_2]
-            seg2['sepreformer'] = True
-            logger.info(f"  ✓ Updated Seg2 enhanced_audio with volume-adjusted separated audio")
+    # -------------------------------------------------------------------------
+    # 3. 모든 overlap 처리 후, 각 세그먼트의 enhanced_audio를 재구성
+    # -------------------------------------------------------------------------
+    logger.info("Reconstructing enhanced_audio for all segments...")
+
+    for seg in segment_list:
+        seg_start = seg['start']
+        seg_end = seg['end']
+        seg_start_frame = int(seg_start * sample_rate)
+        seg_end_frame = int(seg_end * sample_rate)
+
+        if 'separated_regions' in seg and seg['separated_regions']:
+            # 이 세그먼트는 overlap이 있었음 -> 재구성 필요
+            separated_regions = sorted(seg['separated_regions'], key=lambda x: x['start'])
+
+            # 세그먼트를 시간 순으로 파트로 나눔
+            parts = []
+            current_time = seg_start
+
+            for region in separated_regions:
+                region_start = region['start']
+                region_end = region['end']
+                region_audio = region['audio']
+
+                # 1) current_time ~ region_start 사이의 원본 오디오 (겹치지 않는 부분)
+                if current_time < region_start:
+                    start_f = int(current_time * sample_rate)
+                    end_f = int(region_start * sample_rate)
+                    original_part = waveform[start_f:end_f]
+                    parts.append(original_part)
+                    logger.debug(f"  Seg [{seg_start:.2f}-{seg_end:.2f}]: Added original audio [{current_time:.2f}-{region_start:.2f}] ({len(original_part)} samples)")
+
+                # 2) region_start ~ region_end의 분리된 오디오
+                expected_region_length = int((region_end - region_start) * sample_rate)
+                actual_region_length = len(region_audio)
+                parts.append(region_audio)
+                logger.debug(f"  Seg [{seg_start:.2f}-{seg_end:.2f}]: Added separated audio [{region_start:.2f}-{region_end:.2f}] ({actual_region_length} samples, expected: {expected_region_length})")
+
+                current_time = region_end
+
+            # 3) 마지막 region 이후부터 seg_end까지의 원본 오디오
+            if current_time < seg_end:
+                start_f = int(current_time * sample_rate)
+                end_f = seg_end_frame
+                original_part = waveform[start_f:end_f]
+                parts.append(original_part)
+                logger.debug(f"  Seg [{seg_start:.2f}-{seg_end:.2f}]: Added original audio [{current_time:.2f}-{seg_end:.2f}] ({len(original_part)} samples)")
+
+            # 모든 파트를 연결
+            seg['enhanced_audio'] = np.concatenate(parts) if parts else waveform[seg_start_frame:seg_end_frame]
+
+            # 길이 검증
+            expected_length = seg_end_frame - seg_start_frame
+            actual_length = len(seg['enhanced_audio'])
+            if abs(expected_length - actual_length) > 1:
+                logger.warning(f"  ⚠️ Seg [{seg_start:.2f}-{seg_end:.2f}]: Length mismatch! Expected {expected_length}, got {actual_length} (diff: {actual_length - expected_length})")
+            else:
+                logger.debug(f"  ✓ Seg [{seg_start:.2f}-{seg_end:.2f}]: Length verified ({actual_length} samples)")
+
+            # 임시 데이터 정리
+            del seg['separated_regions']
+
+        else:
+            # 겹치지 않는 세그먼트 -> 원본 그대로 사용
+            seg['enhanced_audio'] = waveform[seg_start_frame:seg_end_frame].copy()
+
+    logger.info("Enhanced audio reconstruction complete!")
 
     return audio, segment_list

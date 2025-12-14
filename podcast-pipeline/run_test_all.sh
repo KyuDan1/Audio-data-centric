@@ -53,13 +53,13 @@ qwen3omni_flags=(--no-qwen3omni)
 # Context-aware 캡셔닝 플래그
 # --context_caption: 이전 2개 segment를 context로 사용한 캡셔닝 활성화
 # --no-context_caption: context 없이 단일 segment만 캡셔닝 (기본값)
-context_caption_flags=(--no-context_caption)
+#context_caption_flags=(--no-context_caption)
 #context_caption_flags=(--context_caption --no-context_caption)
 # SepReformer 겹침 음성 분리 플래그
 # --sepreformer: SepReformer를 사용한 겹침 음성 분리 활성화
 # --no-sepreformer: 겹침 음성 분리 비활성화 (기본값)
 #sepreformer_flags=(--sepreformer)
-sepreformer_flags=(--no-sepreformer)
+sepreformer_flags=(--sepreformer)
 # SepReformer overlap threshold (겹침으로 판단할 최소 시간, 초 단위)
 overlap_thresholds=(1.0)
 # 추가된 MERGE_GAP 조합
@@ -84,23 +84,18 @@ for folder in "${folders[@]}"; do
                     for demucs in "${demucs_flags[@]}"; do
                       for whisperx in "${whisperx_flags[@]}"; do
                         for qwen3omni in "${qwen3omni_flags[@]}"; do
-                          for context_caption in "${context_caption_flags[@]}"; do
                             for sepreformer in "${sepreformer_flags[@]}"; do
                               for overlap_th in "${overlap_thresholds[@]}"; do
-                                for sortformer_pad_offset in "${sortformer_pad_offset_values[@]}"; do
-                                  echo "▶ Folder: ${folder}, ${vad}, ${dia3}, ${initprompt}, LLM=${llm}, seg_th=${seg}, min_cluster_size=${min_cluster}, clust_th=${clust}, merge_gap=${merge_gap}, ${asrmoe}, ${demucs}, ${whisperx}, ${qwen3omni}, ${context_caption}, ${sepreformer}, ${sortformer_param_flags[*]}, sortformer_pad_offset=${sortformer_pad_offset}, overlap_th=${overlap_th}, korean=${korean}"
+                                  echo "▶ Folder: ${folder}, ${vad}, ${dia3}, ${initprompt}, LLM=${llm}, seg_th=${seg}, min_cluster_size=${min_cluster}, clust_th=${clust}, merge_gap=${merge_gap}, ${asrmoe}, ${demucs}, ${whisperx}, ${qwen3omni}, ${sepreformer}, overlap_th=${overlap_th}, korean=${korean}"
                                   /mnt/fr20tb/kyudan/miniforge3/envs/dataset/bin/python main_original_ASR_MoE.py \
                                     --input_folder_path "${folder}" \
-                                    ${vad} ${dia3} ${initprompt} ${asrmoe} ${demucs} ${whisperx} ${qwen3omni} ${context_caption} ${sepreformer} \
-                                    ${sortformer_param_flags[@]} \
-                                    --sortformer-pad-offset "${sortformer_pad_offset}" \
+                                    ${vad} ${dia3} ${initprompt} ${asrmoe} ${demucs} ${whisperx} ${qwen3omni} ${sepreformer} \
                                     --LLM "${llm}" \
                                     --seg_th "${seg}" \
                                     --min_cluster_size "${min_cluster}" \
                                     --clust_th "${clust}" \
                                     --merge_gap "${merge_gap}" \
                                     --overlap_threshold "${overlap_th}"
-                                done
                               done
                             done
                           done
@@ -116,4 +111,4 @@ for folder in "${folders[@]}"; do
       done
     done
   done
-done
+
