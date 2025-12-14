@@ -2332,6 +2332,12 @@ def main_process(audio_path, save_path=None, audio_name=None,
     with open(final_path, "w", encoding="utf-8") as f:
         json.dump(output_data, f, ensure_ascii=False, indent=2)
 
+    # Cleanup: remove intermediate FlowSE denoised_audio directory
+    denoise_dir = os.path.join(save_path, "denoised_audio")
+    if os.path.isdir(denoise_dir):
+        shutil.rmtree(denoise_dir, ignore_errors=True)
+        logger.info(f"Removed temporary denoised_audio directory: {denoise_dir}")
+
     logger.info(f"All done, Saved to: {final_path}")
     print(f"Processing complete! Results saved to: {final_path}")
     print(f"Total segments processed: {len(filtered_list)}")
