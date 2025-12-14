@@ -34,7 +34,7 @@ seg_ths=(0.11)
 min_cluster_sizes=(11)
 clust_ths=(0.5)
 #ASRMoE=(--ASRMoE --no-ASRMoE)
-ASRMoE=(--no-ASRMoE)
+ASRMoE=(--ASRMoE)
 # DEMUCS 플래그 조합 (배경음악 제거)
 # --demucs: PANNs로 배경음악 검출 후 Demucs로 보컬 추출
 # --no-demucs: 배경음악 제거 안 함 (기본값)

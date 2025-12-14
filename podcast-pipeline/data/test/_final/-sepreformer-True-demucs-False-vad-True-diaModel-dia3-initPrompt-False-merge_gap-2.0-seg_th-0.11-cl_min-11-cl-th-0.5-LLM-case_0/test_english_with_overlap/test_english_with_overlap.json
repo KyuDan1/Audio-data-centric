@@ -3,262 +3,366 @@
     "audio_duration_seconds": 120.0,
     "audio_duration_minutes": 2.0,
     "vad_sortformer": {
-      "processing_time_seconds": 1.173762321472168,
-      "rt_factor": 0.009781352678934733
+      "processing_time_seconds": 0.8449342250823975,
+      "rt_factor": 0.007041118542353312
     },
     "whisper_large_v3": {
-      "processing_time_seconds": 7.657628774642944,
-      "rt_factor": 0.06381357312202454
+      "processing_time_seconds": 15.343674898147583,
+      "rt_factor": 0.1278639574845632
     },
     "total_segments": 26,
     "sepreformer_separation": {
-      "processing_time_seconds": 0.23703813552856445,
-      "rt_factor": 0.0019753177960713706,
+      "processing_time_seconds": 0.20003747940063477,
+      "rt_factor": 0.0016669789950052897,
       "overlap_threshold_seconds": 1.0,
       "enabled": true
     },
     "flowse_denoising": {
-      "processing_time_seconds": 5.042862176895142,
-      "rt_factor": 0.04202385147412618,
+      "processing_time_seconds": 3.9887216091156006,
+      "rt_factor": 0.03323934674263,
       "enabled": true
     }
   },
   "segments": [
     {
-      "text": " Mr. Franklin?",
       "start": 0.0,
       "end": 0.64,
+      "text": "Mr. Franklin?",
+      "text_whisper": "Mr. Franklin?",
+      "text_parakeet": "The Franklin?",
+      "text_canary": "The Franklin",
       "speaker": "SPEAKER_00",
       "language": "en",
-      "sepreformer": false,
-      "is_separated": true
+      "demucs": false,
+      "is_separated": true,
+      "sepreformer": false
     },
     {
-      "text": " I'm ready.",
       "start": 0.48,
       "end": 1.2,
+      "text": "I'm ready.",
+      "text_whisper": "I'm ready.",
+      "text_parakeet": "I'm ready.",
+      "text_canary": "I'm ready",
       "speaker": "SPEAKER_01",
       "language": "en",
-      "sepreformer": false,
-      "is_separated": true
+      "demucs": false,
+      "is_separated": true,
+      "sepreformer": false
     },
     {
-      "text": " Tyra Glass here.",
       "start": 1.12,
-      "end": 2.56,
+      "end": 2.5599999999999996,
+      "text": "It's Ira Glass here",
+      "text_whisper": "Tyra Glass here.",
+      "text_parakeet": "It's Iraq Glass here.",
+      "text_canary": "It's Ira Glass here",
       "speaker": "SPEAKER_00",
       "language": "en",
-      "sepreformer": false,
-      "is_separated": true
+      "demucs": false,
+      "is_separated": true,
+      "sepreformer": false
     },
     {
-      "text": " You're the emcee on the show, Ira. Oh, great. Ira, are you Ira? Ira?",
       "start": 2.8,
-      "end": 7.28,
+      "end": 7.279999999999999,
+      "text": "Oh you're the MC on the show I read about Oh great I read I read I read",
+      "text_whisper": "You're the emcee on the show, Ira. Oh, great. Ira, are you Ira? Ira?",
+      "text_parakeet": "Oh, you're the MC on the show, Ira. Oh, great. Ira Iron.",
+      "text_canary": "Oh you're the MC on the show I read about Oh great I read I read I read",
       "speaker": "SPEAKER_01",
       "language": "en",
-      "sepreformer": true,
+      "demucs": false,
       "is_separated": true,
+      "sepreformer": true,
       "flowse_denoised": true
     },
     {
-      "text": " I am the MC on this show, yes.",
       "start": 4.24,
       "end": 5.76,
+      "text": "I am the MC on this show, yes.",
+      "text_whisper": "I am the MC on this show, yes.",
+      "text_parakeet": "I am the MC on the show, yes.",
+      "text_canary": "I am the MC on this show yes",
       "speaker": "SPEAKER_00",
       "language": "en",
-      "sepreformer": true,
+      "demucs": false,
       "is_separated": true,
+      "sepreformer": true,
       "flowse_denoised": true
     },
     {
-      "text": " IRA. IRA.",
       "start": 7.36,
       "end": 8.48,
+      "text": "IRA. IRA.",
+      "text_whisper": "IRA. IRA.",
+      "text_parakeet": "Ira, IRA.",
+      "text_canary": "IRA I-R-A",
       "speaker": "SPEAKER_00",
       "language": "en",
-      "sepreformer": false,
-      "is_separated": true
+      "demucs": false,
+      "is_separated": true,
+      "sepreformer": false
     },
     {
-      "text": " Oh, great. Now, hold on one second there. Don't go away.",
       "start": 8.48,
-      "end": 11.200000000000001,
+      "end": 11.2,
+      "text": "Oh, great. Now hold on one second Larry. Don't don't go away.",
+      "text_whisper": "Oh, great. Now, hold on one second there. Don't go away.",
+      "text_parakeet": "Oh, great. Now hold on one second Larry. Don't don't go away.",
+      "text_canary": "Oh great now hold on one second there don't go away",
       "speaker": "SPEAKER_01",
       "language": "en",
-      "sepreformer": false,
-      "is_separated": true
+      "demucs": false,
+      "is_separated": true,
+      "sepreformer": false
     },
     {
-      "text": " Hello?",
       "start": 12.4,
-      "end": 13.440000000000001,
+      "end": 13.44,
+      "text": "Hello?",
+      "text_whisper": "Hello?",
+      "text_parakeet": "Hello?",
+      "text_canary": "Hello",
       "speaker": "SPEAKER_01",
       "language": "en",
-      "sepreformer": false,
-      "is_separated": true
+      "demucs": false,
+      "is_separated": true,
+      "sepreformer": false
     },
     {
-      "text": " Sheldon, call me after 3 o'clock. I've got great news for you. Ira...",
       "start": 14.48,
       "end": 18.080000000000002,
+      "text": "Sheldon, call me after 3 o'clock. I've got great news for you. Ira...",
+      "text_whisper": "Sheldon, call me after 3 o'clock. I've got great news for you. Ira...",
+      "text_parakeet": "Sheldon, call me after three o'clock. I've got great news for you. Ira.",
+      "text_canary": "Shelton McCoomy at three o'clock got great news for you Irum",
       "speaker": "SPEAKER_01",
       "language": "en",
-      "sepreformer": false,
-      "is_separated": true
+      "demucs": false,
+      "is_separated": true,
+      "sepreformer": false
     },
     {
-      "text": " Yes.",
       "start": 18.88,
-      "end": 19.119999999999997,
+      "end": 19.12,
+      "text": "Yes.",
+      "text_whisper": "Yes.",
+      "text_parakeet": "Yeah.",
+      "text_canary": "Yeah",
       "speaker": "SPEAKER_00",
       "language": "en",
-      "sepreformer": false,
-      "is_separated": true
+      "demucs": false,
+      "is_separated": true,
+      "sepreformer": false
     },
     {
-      "text": " So, listen, Tony, if the phone rings, take it in the back, and then come out and tell me who it is. Just say Joe's being with a camera crew. Just for about ten minutes. We'll do about five minutes, ten minutes, right, Iris?",
       "start": 18.96,
       "end": 33.28,
+      "text": "So, uh listen, Tony if the phone rings, take it in the back and then tell me then come out and tell me who it is. just say just say Joe's being with a camera crew. Just for about ten minutes. We'll do about five minutes, ten minutes, right, Irv?",
+      "text_whisper": "So, listen, Tony, if the phone rings, take it in the back, and then come out and tell me who it is. Just say Joe's being with a camera crew. Just for about ten minutes. We'll do about five minutes, ten minutes, right, Iris?",
+      "text_parakeet": "So, uh, listen, Tony. If the phone rings, take it in the back and tell me, then come out and tell me who it is. Just say, just say Joe's being with a camera crew. Just for about ten minutes. We'll do about five minutes, ten minutes, right, Irene?",
+      "text_canary": "So uh listen Tony if the phone rings take it in the back and then tell me then come out and tell me who it is just say just say Joe's being with the camera crew just for about 10 minutes we'll do a five minute ten minutes right Irv?",
       "speaker": "SPEAKER_01",
       "language": "en",
-      "sepreformer": false,
-      "is_separated": true
+      "demucs": false,
+      "is_separated": true,
+      "sepreformer": false
     },
     {
-      "text": " That's right.",
       "start": 33.2,
       "end": 33.6,
+      "text": "That's right.",
+      "text_whisper": "That's right.",
+      "text_parakeet": "That's right.",
+      "text_canary": "That's right",
       "speaker": "SPEAKER_00",
       "language": "en",
-      "sepreformer": false,
-      "is_separated": true
+      "demucs": false,
+      "is_separated": true,
+      "sepreformer": false
     },
     {
-      "text": " Well, you know what?",
       "start": 40.08,
       "end": 41.04,
+      "text": "Well you know what?",
+      "text_whisper": "Well, you know what?",
+      "text_parakeet": "Well you know one?",
+      "text_canary": "Well you know what",
       "speaker": "SPEAKER_02",
       "language": "en",
-      "sepreformer": false,
-      "is_separated": true
+      "demucs": false,
+      "is_separated": true,
+      "sepreformer": false
     },
     {
-      "text": " Great thing about starting a new show is utter anonymity. Nobody really knows what to expect from you.",
       "start": 41.6,
       "end": 49.68,
+      "text": "Great Great thing about starting a new show is utter anonymity. Nobody really knows what to expect from you.",
+      "text_whisper": "Great thing about starting a new show is utter anonymity. Nobody really knows what to expect from you.",
+      "text_parakeet": "Great thing about starting a new show is utter anonymity. Nobody who really knows what to expect from you.",
+      "text_canary": "The great thing about starting a new show is utter anonymity. Nobody really knows what to expect from you.",
       "speaker": "SPEAKER_02",
       "language": "en",
-      "sepreformer": false,
-      "is_separated": true
+      "demucs": false,
+      "is_separated": true,
+      "sepreformer": false
     },
     {
-      "text": " This interviewee did not know us from Adam.",
       "start": 50.64,
       "end": 53.04,
+      "text": "This interviewee did not know us from Adam.",
+      "text_whisper": "This interviewee did not know us from Adam.",
+      "text_parakeet": "This interviewee did not know us from Adam.",
+      "text_canary": "This interviewee did not know us from Adam",
       "speaker": "SPEAKER_02",
       "language": "en",
-      "sepreformer": false,
-      "is_separated": true
+      "demucs": false,
+      "is_separated": true,
+      "sepreformer": false
     },
     {
-      "text": " Okay, well, what? About a minute. We're one minute five into the new show. Right now, it is stretching in front of us. A perfect future.",
       "start": 54.96,
       "end": 63.04,
+      "text": "Okay, well, what? About a minute. We're one minute five into the new show. Right now, it is stretching in front of us. A perfect future.",
+      "text_whisper": "Okay, well, what? About a minute. We're one minute five into the new show. Right now, it is stretching in front of us. A perfect future.",
+      "text_parakeet": "Okay, well, what? About a minute. We're one minute five into the new show. Right now, it is stretching in front of us. A perfect future.",
+      "text_canary": "Okay, well what? About a minute. We're one minute five into the new show. Right now, it is stretching in front of us. A perfect future.",
       "speaker": "SPEAKER_02",
       "language": "en",
-      "sepreformer": false,
-      "is_separated": true
+      "demucs": false,
+      "is_separated": true,
+      "sepreformer": false
     },
     {
-      "text": " yet to be fulfilled. An uncharted little world, little baby coming into the world, no little scars or anything.",
       "start": 63.6,
-      "end": 70.24,
+      "end": 70.24000000000001,
+      "text": "yet to be fulfilled. An uncharted little world. little baby coming into the world, no little scars on it or anything.",
+      "text_whisper": "yet to be fulfilled. An uncharted little world, little baby coming into the world, no little scars or anything.",
+      "text_parakeet": "yet to be fulfilled. An uncharted little world little baby coming into the world, no little scars in it or anything.",
+      "text_canary": "yet to be fulfilled. An uncharted little world. Little baby coming into the world no little scars on it or anything.",
       "speaker": "SPEAKER_02",
       "language": "en",
-      "sepreformer": false,
-      "is_separated": true
+      "demucs": false,
+      "is_separated": true,
+      "sepreformer": false
     },
     {
-      "text": " Nobody hearing my words right now is thinking, oh, man.",
       "start": 72.0,
-      "end": 74.96,
+      "end": 74.96000000000001,
+      "text": "Nobody hearing my words right now is thinking, oh, man.",
+      "text_whisper": "Nobody hearing my words right now is thinking, oh, man.",
+      "text_parakeet": "Nobody hearing my words right now is thinking, Oh man,",
+      "text_canary": "Nobody hearing my words right now is thinking oh man",
       "speaker": "SPEAKER_02",
       "language": "en",
-      "sepreformer": false,
-      "is_separated": true
+      "demucs": false,
+      "is_separated": true,
+      "sepreformer": false
     },
     {
-      "text": " Remember that show? Back when it used to be good? Well, sure, I never missed that show. Back in the old days, back in the first couple years, before it got so-called popular...",
       "start": 75.84,
       "end": 86.08,
+      "text": "Remember that show? Back when it used to be good? Well sure, I never missed that show. Back in the old days, back in the first couple of years, before it got so called popular,",
+      "text_whisper": "Remember that show? Back when it used to be good? Well, sure, I never missed that show. Back in the old days, back in the first couple years, before it got so-called popular...",
+      "text_parakeet": "Remember that show, back when it used to be good? Well sure, I never missed that show. Back in the old days, back in the first couple of years, before it got so called popular,",
+      "text_canary": "Remember that show? Back when it used to be good? Oh sure I never missed that show. Back in the old days. Back in the first couple years. Before it got so called popular.",
       "speaker": "SPEAKER_02",
       "language": "en",
-      "sepreformer": false,
-      "is_separated": true
+      "demucs": false,
+      "is_separated": true,
+      "sepreformer": false
     },
     {
-      "text": " Back when it was still good...",
       "start": 87.04,
       "end": 88.4,
+      "text": "Back when it was still good...",
+      "text_whisper": "Back when it was still good...",
+      "text_parakeet": "back when it was still good,",
+      "text_canary": "Back when it was still good",
       "speaker": "SPEAKER_02",
       "language": "en",
-      "sepreformer": false,
-      "is_separated": true
+      "demucs": false,
+      "is_separated": true,
+      "sepreformer": false
     },
     {
-      "text": " Actually, I think that force, that human desire...",
       "start": 91.36,
       "end": 95.28,
+      "text": "You know, actually I think that that force, human desire",
+      "text_whisper": "Actually, I think that force, that human desire...",
+      "text_parakeet": "You know, actually I think that that that force, that that human desire",
+      "text_canary": "And actually I think that that that force, that that human desire",
       "speaker": "SPEAKER_02",
       "language": "en",
-      "sepreformer": false,
-      "is_separated": true
+      "demucs": false,
+      "is_separated": true,
+      "sepreformer": false
     },
     {
-      "text": " to say that",
       "start": 96.96,
       "end": 98.0,
+      "text": "to say to say that.",
+      "text_whisper": "to say that",
+      "text_parakeet": "To say to say that.",
+      "text_canary": "to say to say that.",
       "speaker": "SPEAKER_02",
       "language": "en",
-      "sepreformer": false,
-      "is_separated": true
+      "demucs": false,
+      "is_separated": true,
+      "sepreformer": false
     },
     {
-      "text": " is so strong to say that i was there i was there back when that show was good that force is so strong it is so basic to who we are as people",
       "start": 98.8,
-      "end": 105.6,
+      "end": 105.60000000000001,
+      "text": "It is so strong to say that I was there I was there back when that show was good. That force is so strong it is so basic to who we are as people.",
+      "text_whisper": "is so strong to say that i was there i was there back when that show was good that force is so strong it is so basic to who we are as people",
+      "text_parakeet": "Is so strong to say that I was there. I was there back when that show was good. That force is so strong, it is so basic to who we are as people.",
+      "text_canary": "It is so strong to say that I was there I was there back when that show was good. That force is so strong it is so basic to who we are as people.",
       "speaker": "SPEAKER_02",
       "language": "en",
-      "sepreformer": false,
-      "is_separated": true
+      "demucs": false,
+      "is_separated": true,
+      "sepreformer": false
     },
     {
-      "text": " Then I know... Okay, what are we? We are two minutes into the program.",
       "start": 106.4,
       "end": 110.80000000000001,
+      "text": "Then I know um okay what are we we are two minutes into the program.",
+      "text_whisper": "Then I know... Okay, what are we? We are two minutes into the program.",
+      "text_parakeet": "Then I know I'm okay, what are we, we are two minutes into the program.",
+      "text_canary": "Did I know um okay what are we we are two minutes into the program",
       "speaker": "SPEAKER_02",
       "language": "en",
-      "sepreformer": false,
-      "is_separated": true
+      "demucs": false,
+      "is_separated": true,
+      "sepreformer": false
     },
     {
-      "text": " I know that somewhere out there,",
       "start": 111.6,
-      "end": 114.32,
+      "end": 114.32000000000001,
+      "text": "I know that somewhere out there",
+      "text_whisper": "I know that somewhere out there,",
+      "text_parakeet": "I know that somewhere out there",
+      "text_canary": "I know that somewhere out there",
       "speaker": "SPEAKER_02",
       "language": "en",
-      "sepreformer": false,
-      "is_separated": true
+      "demucs": false,
+      "is_separated": true,
+      "sepreformer": false
     },
     {
-      "text": " One or two of you are saying, oh, sure, I used to listen to that show back in the 50s.",
       "start": 115.04,
       "end": 119.75,
+      "text": "One or two of you are saying, Oh, Shaw, you still listen to that show back in the back in the 50s.",
+      "text_whisper": "One or two of you are saying, oh, sure, I used to listen to that show back in the 50s.",
+      "text_parakeet": "One or two of you are saying, Oh, Shaw, you still listen to that show back in the back in the 50s.",
+      "text_canary": "One or two of you are saying oh sure you still listen to that show back in the back in the",
       "speaker": "SPEAKER_02",
       "language": "en",
-      "sepreformer": false,
-      "is_separated": true
+      "demucs": false,
+      "is_separated": true,
+      "sepreformer": false
     }
   ]
 }

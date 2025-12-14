@@ -74,9 +74,9 @@ import json
 import re
 import argparse
 from g2pk import G2p
-import difflib
 import collections
-from typing import List, Tuple
+import difflib
+from typing import List, Tuple, Dict
 from itertools import zip_longest
 
 # Import FlowSE denoising class
@@ -127,9 +127,133 @@ class RoverEnsembler:
     """
 
     @staticmethod
+    def build_confusion_network(all_tokens: List[List[str]]) -> List[List[str]]:
+        """
+        여러 토큰 시퀀스를 Confusion Network로 구성합니다.
+        모든 시퀀스를 동시에 고려하여 통합된 정렬을 생성합니다.
+
+        Args:
+            all_tokens: 모든 transcript의 토큰 리스트들 [[tok1, tok2, ...], ...]
+
+        Returns:
+            각 위치별 토큰 후보들의 리스트 [[cand1, cand2, ...], [cand1, cand2, ...], ...]
+        """
+        if not all_tokens:
+            return []
+
+        if len(all_tokens) == 1:
+            return [[tok] for tok in all_tokens[0]]
+
+        # 가장 긴 시퀀스를 pivot으로 선택 (보통 가장 정확함)
+        pivot_idx = max(range(len(all_tokens)), key=lambda i: len(all_tokens[i]))
+        pivot = all_tokens[pivot_idx]
+
+        # Confusion network 초기화: pivot의 각 위치에 해당 토큰으로 시작
+        confusion_net = [[pivot[i]] for i in range(len(pivot))]
+
+        # 다른 모든 시퀀스를 pivot에 정렬하여 confusion network에 추가
+        for idx, tokens in enumerate(all_tokens):
+            if idx == pivot_idx:
+                continue
+
+            matcher = difflib.SequenceMatcher(None, pivot, tokens)
+
+            for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+                if tag == 'equal':
+                    # 일치: 해당 위치에 토큰 추가
+                    for i, j in zip(range(i1, i2), range(j1, j2)):
+                        if i < len(confusion_net):
+                            confusion_net[i].append(tokens[j])
+
+                elif tag == 'replace':
+                    # 치환: 각 pivot 위치에 대응하는 candidate 토큰 추가
+                    pivot_len = i2 - i1
+                    cand_len = j2 - j1
+
+                    if pivot_len == cand_len:
+                        # 1:1 대응
+                        for i, j in zip(range(i1, i2), range(j1, j2)):
+                            if i < len(confusion_net):
+                                confusion_net[i].append(tokens[j])
+                    elif pivot_len > cand_len:
+                        # pivot이 더 긺: candidate를 분산 배치
+                        for i in range(i1, i2):
+                            offset = (i - i1) * cand_len // pivot_len
+                            if j1 + offset < j2 and i < len(confusion_net):
+                                confusion_net[i].append(tokens[j1 + offset])
+                    else:
+                        # candidate가 더 긺: pivot 위치에 여러 candidate 병합
+                        # 첫 번째 pivot 위치에 모든 candidate 추가
+                        if i1 < len(confusion_net):
+                            for j in range(j1, j2):
+                                confusion_net[i1].append(tokens[j])
+
+                elif tag == 'delete':
+                    # pivot에만 존재: 이미 confusion_net에 있음 (다른 시퀀스는 빈 값)
+                    pass
+
+                elif tag == 'insert':
+                    # candidate에만 존재: 가장 가까운 pivot 위치에 삽입
+                    # 이전 매칭 위치 다음에 추가
+                    insert_pos = min(i1, len(confusion_net) - 1) if confusion_net else 0
+                    if insert_pos >= 0 and insert_pos < len(confusion_net):
+                        for j in range(j1, j2):
+                            confusion_net[insert_pos].append(tokens[j])
+
+        return confusion_net
+
+    @staticmethod
+    def has_local_repetition(output: List[str], word: str, window: int = 3) -> bool:
+        """
+        최근 window 내에 같은 단어가 반복되는지 확인합니다.
+
+        Args:
+            output: 현재까지 출력된 단어 리스트
+            word: 확인할 단어
+            window: 확인할 윈도우 크기
+
+        Returns:
+            반복이면 True, 아니면 False
+        """
+        if len(output) < 1:
+            return False
+
+        # 최근 window개 단어 확인
+        recent = output[-window:] if len(output) >= window else output
+
+        # 같은 단어가 이미 2번 이상 나왔으면 반복으로 판단
+        return recent.count(word) >= 2
+
+    @staticmethod
+    def calculate_transcript_similarity(t1_tokens: List[str], t2_tokens: List[str]) -> float:
+        """
+        두 transcript의 유사도를 계산합니다 (Jaccard similarity 기반).
+
+        Args:
+            t1_tokens: 첫 번째 transcript 토큰
+            t2_tokens: 두 번째 transcript 토큰
+
+        Returns:
+            0~1 사이의 유사도 점수
+        """
+        if not t1_tokens or not t2_tokens:
+            return 0.0
+
+        set1 = set(t1_tokens)
+        set2 = set(t2_tokens)
+
+        intersection = len(set1 & set2)
+        union = len(set1 | set2)
+
+        return intersection / union if union > 0 else 0.0
+
+    @staticmethod
     def align_and_vote(transcripts: List[str]) -> str:
         """
-        여러 전사 결과를 정렬하고 다수결 투표를 수행합니다.
+        여러 전사 결과를 Confusion Network로 정렬 후 개선된 투표를 수행합니다.
+        - Confusion Network로 통합 정렬
+        - 반복 패턴 감지 및 필터링
+        - 유사도 기반 아웃라이어 다운웨이팅
 
         Args:
             transcripts: ASR 모델들의 전사 결과 리스트 (예: [whisper, canary, parakeet])
@@ -149,27 +273,80 @@ class RoverEnsembler:
             return transcripts[0]
 
         # 단어 단위로 토큰화
-        base_tokens = transcripts[0].split()  # Whisper
-        candidate_1 = transcripts[1].split() if len(transcripts) > 1 else []  # Canary
-        candidate_2 = transcripts[2].split() if len(transcripts) > 2 else []  # Parakeet
+        all_tokens = [t.split() for t in transcripts]
 
+        # Transcript 간 유사도 계산하여 아웃라이어 감지
+        similarities = []
+        for i in range(len(all_tokens)):
+            sim_scores = []
+            for j in range(len(all_tokens)):
+                if i != j:
+                    sim = RoverEnsembler.calculate_transcript_similarity(all_tokens[i], all_tokens[j])
+                    sim_scores.append(sim)
+            avg_sim = sum(sim_scores) / len(sim_scores) if sim_scores else 0.0
+            similarities.append(avg_sim)
+
+        # 평균 유사도가 너무 낮은 transcript는 신뢰도 감소
+        # 임계값: 평균 유사도가 0.3 미만이면 아웃라이어로 간주
+        outlier_threshold = 0.3
+        trusted_indices = [i for i, sim in enumerate(similarities) if sim >= outlier_threshold]
+
+        # 모든 transcript가 아웃라이어면 가장 유사도 높은 것들만 사용
+        if len(trusted_indices) == 0:
+            trusted_indices = [i for i, _ in sorted(enumerate(similarities), key=lambda x: x[1], reverse=True)[:2]]
+
+        # Confusion Network 구성
+        confusion_net = RoverEnsembler.build_confusion_network(all_tokens)
+
+        # 각 위치별 개선된 투표
         final_output = []
-
-        # 3개의 리스트를 동시에 순회하며 다수결 투표
-        for w1, w2, w3 in zip_longest(base_tokens, candidate_1, candidate_2, fillvalue=""):
-            votes = collections.Counter([w for w in [w1, w2, w3] if w])  # 빈 문자열 제외
-
-            if not votes:
+        for pos_idx, candidates in enumerate(confusion_net):
+            if not candidates:
                 continue
 
+            # 빈 문자열 제거 후 투표
+            valid_candidates = [c for c in candidates if c]
+            if not valid_candidates:
+                continue
+
+            # 신뢰할 수 있는 transcript의 후보들만 필터링
+            # (confusion_net의 첫 번째는 pivot, 나머지는 순서대로)
+            trusted_candidates = []
+            for i, cand in enumerate(valid_candidates):
+                # i번째 candidate가 어느 transcript에서 왔는지 추정
+                # (간단히 pivot은 항상 신뢰, 나머지는 순서대로)
+                if i == 0 or (i - 1) in trusted_indices:
+                    trusted_candidates.append(cand)
+
+            # 신뢰할 수 있는 후보가 없으면 원래 후보 사용
+            if not trusted_candidates:
+                trusted_candidates = valid_candidates
+
             # 최다 득표 단어 선정
+            votes = collections.Counter(trusted_candidates)
             best_word, count = votes.most_common(1)[0]
 
-            # 2개 이상이 동의하면 채택, 그렇지 않으면 첫 번째(Whisper) 채택
-            if count >= 2:
+            # 반복 패턴 체크: 최근에 같은 단어가 반복되면 스킵
+            if RoverEnsembler.has_local_repetition(final_output, best_word):
+                # 반복이면 다음으로 많은 후보 선택
+                if len(votes) > 1:
+                    best_word = votes.most_common(2)[1][0]
+                else:
+                    # 다른 후보가 없으면 스킵
+                    continue
+
+            # 과반수 이상이면 채택, 아니면 pivot 우선
+            if count >= len(trusted_candidates) / 2:
                 final_output.append(best_word)
             else:
-                final_output.append(w1 if w1 else best_word)
+                # pivot의 토큰 우선
+                pivot_word = candidates[0] if candidates[0] else best_word
+                # pivot도 반복 체크
+                if RoverEnsembler.has_local_repetition(final_output, pivot_word):
+                    if pivot_word != best_word:
+                        final_output.append(best_word)
+                else:
+                    final_output.append(pivot_word)
 
         return " ".join(final_output)
 
