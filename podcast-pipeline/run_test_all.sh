@@ -84,18 +84,21 @@ for folder in "${folders[@]}"; do
                     for demucs in "${demucs_flags[@]}"; do
                       for whisperx in "${whisperx_flags[@]}"; do
                         for qwen3omni in "${qwen3omni_flags[@]}"; do
-                            for sepreformer in "${sepreformer_flags[@]}"; do
-                              for overlap_th in "${overlap_thresholds[@]}"; do
-                                  echo "▶ Folder: ${folder}, ${vad}, ${dia3}, ${initprompt}, LLM=${llm}, seg_th=${seg}, min_cluster_size=${min_cluster}, clust_th=${clust}, merge_gap=${merge_gap}, ${asrmoe}, ${demucs}, ${whisperx}, ${qwen3omni}, ${sepreformer}, overlap_th=${overlap_th}, korean=${korean}"
-                                  /mnt/fr20tb/kyudan/miniforge3/envs/dataset/bin/python main_original_ASR_MoE.py \
-                                    --input_folder_path "${folder}" \
-                                    ${vad} ${dia3} ${initprompt} ${asrmoe} ${demucs} ${whisperx} ${qwen3omni} ${sepreformer} \
-                                    --LLM "${llm}" \
-                                    --seg_th "${seg}" \
-                                    --min_cluster_size "${min_cluster}" \
-                                    --clust_th "${clust}" \
-                                    --merge_gap "${merge_gap}" \
-                                    --overlap_threshold "${overlap_th}"
+                          for sepreformer in "${sepreformer_flags[@]}"; do
+                            for overlap_th in "${overlap_thresholds[@]}"; do
+                              for sortformer_pad_offset in "${sortformer_pad_offset_values[@]}"; do
+                                echo "▶ Folder: ${folder}, ${vad}, ${dia3}, ${initprompt}, LLM=${llm}, seg_th=${seg}, min_cluster_size=${min_cluster}, clust_th=${clust}, merge_gap=${merge_gap}, ${asrmoe}, ${demucs}, ${whisperx}, ${qwen3omni}, ${sepreformer}, ${sortformer_param_flags[*]}, sortformer_pad_offset=${sortformer_pad_offset}, overlap_th=${overlap_th}, korean=${korean}"
+                                /mnt/fr20tb/kyudan/miniforge3/envs/dataset/bin/python main_original_ASR_MoE.py \
+                                  --input_folder_path "${folder}" \
+                                  ${vad} ${dia3} ${initprompt} ${asrmoe} ${demucs} ${whisperx} ${qwen3omni} ${sepreformer} \
+                                  ${sortformer_param_flags[@]} \
+                                  --sortformer-pad-offset "${sortformer_pad_offset}" \
+                                  --LLM "${llm}" \
+                                  --seg_th "${seg}" \
+                                  --min_cluster_size "${min_cluster}" \
+                                  --clust_th "${clust}" \
+                                  --merge_gap "${merge_gap}" \
+                                  --overlap_threshold "${overlap_th}"
                               done
                             done
                           done
@@ -111,4 +114,4 @@ for folder in "${folders[@]}"; do
       done
     done
   done
-
+done

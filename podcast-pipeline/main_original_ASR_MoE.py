@@ -86,6 +86,36 @@ sys.path.insert(0, flowse_path)
 from simple_denoise import FlowSEDenoiser
 
 warnings.filterwarnings("ignore")
+
+
+def _apply_sortformer_segment_padding_from_args(
+    df: pd.DataFrame, args, logger, audio_duration: float | None = None
+) -> pd.DataFrame:
+    """
+    Shift diarization segment boundaries (frame-level tweak) outside NeMo's internal post-processing.
+    When --sortformer-param is set, this ensures observable timing changes even if model cfg overrides are ignored.
+    """
+    if df is None or df.empty:
+        return df
+    if not getattr(args, "sortformer_param", False):
+        return df
+
+    pad_onset = float(getattr(args, "sortformer_pad_onset", 0.0))
+    pad_offset = float(getattr(args, "sortformer_pad_offset", 0.0))
+
+    if pad_onset == 0.0 and pad_offset == 0.0:
+        return df
+
+    df = df.copy()
+    df["start"] = (df["start"].astype(float) + pad_onset).clip(lower=0.0)
+    df["end"] = df["end"].astype(float) + pad_offset
+    if audio_duration is not None and audio_duration > 0:
+        df["end"] = df["end"].clip(lower=0.0, upper=float(audio_duration))
+    else:
+        df["end"] = df["end"].clip(lower=0.0)
+    df["end"] = df[["start", "end"]].max(axis=1)
+
+    return df
 audio_count = 0
 MAX_DIA_CHUNK_DURATION = 5 * 60  # 5 minutes
 MIN_SPLIT_SILENCE = 1.0  # seconds of silence required for splitting
@@ -2046,6 +2076,9 @@ def main_process(audio_path, save_path=None, audio_name=None,
             if not chunk_df.empty:
                 chunk_df["start"] += chunk["offset"]
                 chunk_df["end"] += chunk["offset"]
+                chunk_df = _apply_sortformer_segment_padding_from_args(
+                    chunk_df, args=args, logger=logger, audio_duration=audio_duration
+                )
             diarization_frames.append(chunk_df)
     finally:
         if temp_chunk_dir:
@@ -2443,6 +2476,29 @@ if __name__ == "__main__":
         type=float,
         default=1.0,
         help="Minimum overlap duration in seconds to trigger SepReformer separation",
+    )
+
+    # Sortformer diarization segment boundary adjustment (optional)
+    parser.add_argument(
+        "--sortformer-param",
+        "--sortformerParam",
+        "--sortformerParma",
+        dest="sortformer_param",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Enable Sortformer segment boundary adjustment (pad_offset/pad_onset applied after model output).",
+    )
+    parser.add_argument(
+        "--sortformer-pad-offset",
+        type=float,
+        default=-0.24,
+        help="Seconds to add to segment end time (negative pulls ends earlier). Used with --sortformer-param.",
+    )
+    parser.add_argument(
+        "--sortformer-pad-onset",
+        type=float,
+        default=0.0,
+        help="Seconds to add to segment start time (negative pulls starts earlier). Used with --sortformer-param.",
     )
 
 
