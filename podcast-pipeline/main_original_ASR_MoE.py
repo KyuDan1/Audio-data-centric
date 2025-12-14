@@ -571,17 +571,87 @@ def detect_segment_background_music(segment_audio, sample_rate, panns_model, thr
         return False, 0.0
 
 
-def remove_segment_background_music_demucs(segment_audio, sample_rate):
+def separate_full_vocals_demucs(full_audio: np.ndarray, sample_rate: int) -> np.ndarray | None:
+    """
+    Run Demucs once on the entire audio to obtain a reusable vocal stem.
+    Returns the vocal waveform resampled to the original sample_rate.
+    """
+    temp_dir = tempfile.mkdtemp(prefix="demucs_full_")
+
+    try:
+        temp_input = os.path.join(temp_dir, "full.wav")
+        sf.write(temp_input, full_audio, sample_rate)
+
+        import subprocess
+        demucs_output_dir = os.path.join(temp_dir, "separated")
+
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        logger.info(f"Running single Demucs pass on device: {device}")
+
+        cmd = [
+            "python", "-m", "demucs.separate",
+            "-n", "htdemucs",
+            "--two-stems", "vocals",
+            "-d", device,
+            "-o", demucs_output_dir,
+            temp_input,
+        ]
+
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode != 0:
+            logger.error(f"Demucs full-audio run failed: {result.stderr}")
+            return None
+
+        input_stem = Path(temp_input).stem
+        vocal_path = os.path.join(demucs_output_dir, "htdemucs", input_stem, "vocals.wav")
+        if not os.path.exists(vocal_path):
+            logger.error(f"Vocal track not found at {vocal_path}")
+            return None
+
+        vocal_waveform, _ = librosa.load(vocal_path, sr=sample_rate, mono=True)
+        return vocal_waveform.astype(np.float32)
+
+    except Exception as e:
+        logger.error(f"Error during full Demucs processing: {e}")
+        return None
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+
+def remove_segment_background_music_demucs(segment_audio, sample_rate, full_vocals=None, start_frame=None, end_frame=None):
     """
     세그먼트 오디오에서 Demucs를 사용하여 배경음악을 제거하고 vocal만 추출합니다.
+    full_vocals가 제공되면 precomputed stem을 슬라이싱하여 사용합니다.
 
     Args:
         segment_audio (np.ndarray): 세그먼트 오디오 waveform.
         sample_rate (int): 샘플 레이트.
+        full_vocals (np.ndarray | None): 전체 오디오에 대해 demucs로 미리 추출한 vocal waveform.
+        start_frame (int | None): 세그먼트 시작 프레임 (전체 waveform 기준).
+        end_frame (int | None): 세그먼트 종료 프레임 (전체 waveform 기준).
 
     Returns:
         np.ndarray: Vocal-only waveform 또는 실패 시 원본.
     """
+    if full_vocals is not None and start_frame is not None and end_frame is not None:
+        # 빠른 경로: 미리 분리된 vocal 트랙을 슬라이싱
+        start = max(0, int(start_frame))
+        end = min(int(end_frame), len(full_vocals))
+        if end <= start:
+            return segment_audio
+
+        vocal_slice = full_vocals[start:end]
+        if len(vocal_slice) == 0:
+            return segment_audio
+
+        target_length = len(segment_audio)
+        if len(vocal_slice) >= target_length:
+            return vocal_slice[:target_length].astype(np.float32)
+
+        padded = np.zeros(target_length, dtype=np.float32)
+        padded[: len(vocal_slice)] = vocal_slice.astype(np.float32)
+        return padded
+
     # Create temporary directory for demucs output
     temp_dir = tempfile.mkdtemp(prefix="demucs_seg_")
 
@@ -649,6 +719,8 @@ def preprocess_segments_with_demucs(segment_list, audio, panns_model=None, use_d
     sample_rate = audio["sample_rate"]
     total_samples = len(waveform)
     segment_demucs_flags = []
+    vocal_full = None
+    full_demucs_attempted = False
 
     for idx, segment in enumerate(segment_list):
         # Apply padding to cover ASR boundary shifts
@@ -673,8 +745,23 @@ def preprocess_segments_with_demucs(segment_list, audio, panns_model=None, use_d
         
         if has_music:
             logger.info(f"Segment {idx} (with padding): Background music detected (prob={music_prob:.3f}), applying Demucs...")
-            # Apply demucs
-            vocal_audio = remove_segment_background_music_demucs(segment_audio, sample_rate)
+            # Apply demucs (prefer single full-audio stem to avoid per-segment overhead)
+            if vocal_full is None and not full_demucs_attempted:
+                vocal_full = separate_full_vocals_demucs(waveform, sample_rate)
+                full_demucs_attempted = True
+                if vocal_full is None:
+                    logger.warning("Full Demucs pass failed; falling back to per-segment separation.")
+
+            if vocal_full is not None:
+                vocal_audio = remove_segment_background_music_demucs(
+                    segment_audio,
+                    sample_rate,
+                    full_vocals=vocal_full,
+                    start_frame=start_frame,
+                    end_frame=end_frame,
+                )
+            else:
+                vocal_audio = remove_segment_background_music_demucs(segment_audio, sample_rate)
             
             # Replace the segment in the waveform
             # vocal_audio 길이가 segment_audio와 다를 수 있으므로 길이를 맞춤

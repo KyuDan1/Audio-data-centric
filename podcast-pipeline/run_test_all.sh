@@ -39,7 +39,7 @@ ASRMoE=(--ASRMoE)
 # --demucs: PANNs로 배경음악 검출 후 Demucs로 보컬 추출
 # --no-demucs: 배경음악 제거 안 함 (기본값)
 #demucs_flags=(--demucs)
-demucs_flags=(--no-demucs)
+demucs_flags=(--demucs)
 # WhisperX 단어 수준 타임스탬프 플래그
 # --whisperx_word_timestamps: WhisperX 정렬을 통한 단어 수준 타임스탬프 활성화
 # --no-whisperx_word_timestamps: 단어 수준 타임스탬프 비활성화 (기본값)
