@@ -1,6 +1,6 @@
 from pydub import AudioSegment
 
-def cut_mp3(input_file, output_file, minutes=2):
+def cut_mp3(input_file, output_file, minutes=10):
     try:
         # MP3 파일 불러오기
         print(f"파일을 로딩 중입니다: {input_file}")

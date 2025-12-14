@@ -48,7 +48,7 @@ import os
 from tritony import InferenceClient
 import numpy as np
 import librosa
-from pyannote.audio import Pipeline
+from pyannote.audio import Pipeline, Inference
 import pandas as pd
 #from prompt import DIAR_PROMPT, WEAK_DIAR_PROMPT, NEW_DIAR_PROMPT, SPK_SUMMERIZE_PROMPT, NEW_DIAR_PROMPT_with_spk_inform, DIAR_PROMPT_KO
 from utils.tool import (
@@ -117,8 +117,9 @@ def _apply_sortformer_segment_padding_from_args(
 
     return df
 audio_count = 0
-MAX_DIA_CHUNK_DURATION = 5 * 60  # 5 minutes
-MIN_SPLIT_SILENCE = 1.0  # seconds of silence required for splitting
+# Limit diarization chunks to under 3 minutes, preferring VAD-detected silences as cut points.
+MAX_DIA_CHUNK_DURATION = 3 * 60  # 3 minutes
+MIN_SPLIT_SILENCE = 0.3  # seconds of silence required for splitting (more sensitive)
 QWEN_3_OMNI_PORT = "11500"
 class RoverEnsembler:
     """
@@ -2000,6 +2001,24 @@ def df_to_list(df: pd.DataFrame) -> list[dict]:
         })
     return records
 
+
+def deduplicate_segments_by_index(segments: list[dict], logger=None) -> list[dict]:
+    """
+    Ensure each segment index is unique, keeping the first occurrence.
+    """
+    seen = set()
+    deduped = []
+    for seg in segments:
+        idx = seg.get("index")
+        if idx is None or idx not in seen:
+            if idx is not None:
+                seen.add(idx)
+            deduped.append(seg)
+        else:
+            if logger:
+                logger.warning(f"Duplicate segment index detected and skipped: {idx}")
+    return deduped
+
 def split_long_segments(segment_list, max_duration=30.0):
     """
     세그먼트 리스트에서 max_duration보다 긴 세그먼트를
@@ -2093,30 +2112,221 @@ def _build_silence_intervals(waveform, sample_rate, min_silence):
 
 def _build_chunk_ranges(total_duration, silence_intervals, max_duration):
     """
-    Determine chunk ranges capped at max_duration, preferring silence points.
+    Determine chunk ranges by splitting at silence points, ensuring all chunks are under max_duration.
+    Prioritizes splitting at silence (non-speech) intervals to avoid cutting in the middle of speech.
     """
     epsilon = 1e-3
     if total_duration <= max_duration + epsilon:
         return [(0.0, total_duration)]
 
+    # Extract midpoints of silence intervals as potential cut points
     silence_points = sorted([(start + end) / 2.0 for start, end in silence_intervals])
+
+    if not silence_points:
+        # No silence found, fall back to hard cuts at max_duration
+        chunk_ranges = []
+        chunk_start = 0.0
+        while chunk_start < total_duration - epsilon:
+            chunk_end = min(chunk_start + max_duration, total_duration)
+            chunk_ranges.append((chunk_start, chunk_end))
+            chunk_start = chunk_end
+        return chunk_ranges if chunk_ranges else [(0.0, total_duration)]
+
     chunk_ranges = []
     chunk_start = 0.0
 
     while chunk_start < total_duration - epsilon:
-        limit = min(chunk_start + max_duration, total_duration)
+        # Find the best silence point within max_duration from chunk_start
+        limit = chunk_start + max_duration
+
+        # Get all silence points that are after chunk_start and before/at limit
         candidates = [p for p in silence_points if chunk_start + epsilon < p <= limit]
-        chunk_end = candidates[-1] if candidates else limit
+
+        if candidates:
+            # Use the last (furthest) silence point within the limit
+            chunk_end = candidates[-1]
+        else:
+            # No silence point found within max_duration
+            # Check if there's any silence point after limit
+            future_candidates = [p for p in silence_points if p > limit]
+            if future_candidates:
+                # There's silence ahead but beyond max_duration, use limit as hard cut
+                chunk_end = min(limit, total_duration)
+            else:
+                # No more silence points, go to the end
+                chunk_end = total_duration
+
+        # Ensure we're making progress
         if chunk_end - chunk_start < epsilon:
-            chunk_end = limit
+            chunk_end = min(chunk_start + max_duration, total_duration)
             if chunk_end - chunk_start < epsilon:
                 break
+
         chunk_ranges.append((chunk_start, chunk_end))
         chunk_start = chunk_end
 
-    if not chunk_ranges:
-        chunk_ranges.append((0.0, total_duration))
-    return chunk_ranges
+    return chunk_ranges if chunk_ranges else [(0.0, total_duration)]
+
+
+def _extract_speaker_embedding(
+    audio_info,
+    start: float,
+    end: float,
+    embedder: Inference | None,
+    sample_window: float = 2.0,
+    min_duration: float = 0.5,
+):
+    """
+    Compute a single speaker embedding from a segment of the full audio.
+    """
+    if embedder is None:
+        return None
+
+    waveform = audio_info.get("waveform")
+    sample_rate = audio_info.get("sample_rate")
+    if waveform is None or sample_rate is None:
+        return None
+
+    total_duration = len(waveform) / sample_rate
+    start = max(0.0, min(start, total_duration))
+    end = max(start, min(end, total_duration))
+    duration = end - start
+    if duration < min_duration:
+        return None
+
+    # Center-crop long segments to a fixed analysis window.
+    if duration > sample_window:
+        center = (start + end) / 2.0
+        start = center - sample_window / 2.0
+        end = center + sample_window / 2.0
+
+    start_idx = int(start * sample_rate)
+    end_idx = int(end * sample_rate)
+    segment = waveform[start_idx:end_idx]
+    if segment.size == 0:
+        return None
+
+    target_sr = getattr(embedder, "sample_rate", 16000)
+    try:
+        if sample_rate != target_sr:
+            segment = librosa.resample(segment, orig_sr=sample_rate, target_sr=target_sr)
+    except Exception:
+        # If resampling fails, fall back to the original segment.
+        target_sr = sample_rate
+
+    # pyannote Inference expects a mapping with waveform + sample_rate
+    try:
+        torch_seg = torch.as_tensor(segment, dtype=torch.float32).unsqueeze(0)
+        emb = embedder({"waveform": torch_seg, "sample_rate": target_sr})
+    except Exception:
+        return None
+    if emb is None:
+        return None
+    if isinstance(emb, torch.Tensor):
+        emb = emb.detach().cpu().numpy()
+    if isinstance(emb, np.ndarray) and emb.ndim > 1:
+        emb = emb.mean(axis=0)
+    return emb
+
+
+def _cosine_similarity(vec_a, vec_b):
+    if vec_a is None or vec_b is None:
+        return -1.0
+    denom = np.linalg.norm(vec_a) * np.linalg.norm(vec_b)
+    if denom == 0:
+        return -1.0
+    return float(np.dot(vec_a, vec_b) / denom)
+
+
+def _compute_chunk_speaker_centroids(chunk_df: pd.DataFrame, audio_info, embedder: Inference | None):
+    """
+    Build per-speaker centroids for a diarization chunk using short audio snippets.
+    """
+    if embedder is None or chunk_df is None or chunk_df.empty:
+        return {}
+
+    centroids = {}
+    for speaker, rows in chunk_df.groupby("speaker"):
+        embeddings = []
+        for _, row in rows.sort_values("start").iterrows():
+            emb = _extract_speaker_embedding(
+                audio_info, row["start"], row["end"], embedder=embedder
+            )
+            if emb is not None:
+                embeddings.append(emb)
+            if len(embeddings) >= 3:
+                break
+        if embeddings:
+            centroids[speaker] = np.mean(embeddings, axis=0)
+    return centroids
+
+
+def align_speakers_across_chunks(
+    chunk_frames: list[pd.DataFrame],
+    audio_info,
+    embedder: Inference | None,
+    similarity_threshold: float = 0.75,
+):
+    """
+    Link local speaker labels from sequential diarization chunks into a single
+    recording-level speaker inventory using embedding similarity.
+    """
+    if embedder is None or not chunk_frames:
+        logger.warning("Speaker embedder unavailable; skipping cross-chunk speaker linking.")
+        return chunk_frames
+
+    global_centroids: dict[str, np.ndarray | None] = {}
+    global_counts: dict[str, int] = {}
+    next_global_idx = 0
+    aligned_frames: list[pd.DataFrame] = []
+
+    for chunk_idx, df in enumerate(chunk_frames):
+        if df is None or df.empty:
+            aligned_frames.append(df)
+            continue
+
+        local_centroids = _compute_chunk_speaker_centroids(df, audio_info, embedder)
+        mapping: dict[str, str] = {}
+        used_global_ids_in_chunk: set[str] = set()  # Track global IDs already used in this chunk
+
+        for local_speaker in df["speaker"].unique():
+            emb = local_centroids.get(local_speaker)
+
+            best_id = None
+            best_sim = -1.0
+            if emb is not None:
+                for gid, centroid in global_centroids.items():
+                    if centroid is None:
+                        continue
+                    # Skip global IDs already mapped to other local speakers in this chunk
+                    if gid in used_global_ids_in_chunk:
+                        continue
+                    sim = _cosine_similarity(emb, centroid)
+                    if sim > best_sim:
+                        best_sim = sim
+                        best_id = gid
+
+            if best_sim >= similarity_threshold and best_id is not None:
+                mapping[local_speaker] = best_id
+                used_global_ids_in_chunk.add(best_id)  # Mark this global ID as used in this chunk
+                count = global_counts.get(best_id, 0)
+                global_centroids[best_id] = (global_centroids[best_id] * count + emb) / (
+                    count + 1
+                )
+                global_counts[best_id] = count + 1
+            else:
+                global_id = f"SPEAKER_{next_global_idx:02d}"
+                next_global_idx += 1
+                mapping[local_speaker] = global_id
+                used_global_ids_in_chunk.add(global_id)  # Mark this new global ID as used
+                global_centroids[global_id] = emb
+                global_counts[global_id] = 1 if emb is not None else 0
+
+        remapped_df = df.copy()
+        remapped_df["speaker"] = remapped_df["speaker"].map(mapping)
+        aligned_frames.append(remapped_df)
+
+    return aligned_frames
 
 
 def prepare_diarization_chunks(
@@ -2296,7 +2506,9 @@ def main_process(audio_path, save_path=None, audio_name=None,
                  flowse_denoiser = None,
                  sepreformer_separator = None,
                  embedding_model = None,
-                 panns_model = None):
+                 panns_model = None,
+                 speaker_embedder = None,
+                 speaker_link_threshold: float = 0.75):
 
     if not audio_path.endswith((".mp3", ".wav", ".flac", ".m4a", ".aac")):
         logger.warning(f"Unsupported file type: {audio_path}")
@@ -2347,6 +2559,14 @@ def main_process(audio_path, save_path=None, audio_name=None,
     finally:
         if temp_chunk_dir:
             shutil.rmtree(temp_chunk_dir, ignore_errors=True)
+
+    if diarization_frames:
+        diarization_frames = align_speakers_across_chunks(
+            diarization_frames,
+            audio_info=audio,
+            embedder=speaker_embedder,
+            similarity_threshold=speaker_link_threshold,
+        )
 
     if diarization_frames:
         speakerdia = pd.concat(diarization_frames, ignore_index=True)
@@ -2695,6 +2915,12 @@ if __name__ == "__main__":
         default=2,
         help="merge gap in seconds, if smaller than this, merge",
     )
+    parser.add_argument(
+        "--speaker-link-threshold",
+        type=float,
+        default=0.75,
+        help="Cosine similarity threshold for linking speakers across diarization chunks",
+    )
 
     parser.add_argument(
         "--initprompt",
@@ -2919,6 +3145,19 @@ if __name__ == "__main__":
     # 영어 구간 탐지 패턴: 연속된 알파벳과 apostrophe, 공백으로 연결된 단어 그룹
     ENG_PATTERN = re.compile(r"[A-Za-z][A-Za-z']*(?: [A-Za-z][A-Za-z']*)*")
 
+    speaker_embedder = None
+    try:
+        speaker_embedder = Inference(
+            "pyannote/embedding",
+            device=device,
+            use_auth_token=cfg["huggingface_token"],
+            window="whole",
+        )
+        logger.debug(" * Speaker embedding model loaded for cross-chunk linking")
+    except Exception as e:
+        logger.error(f" * Failed to load speaker embedding model: {e}")
+        speaker_embedder = None
+
     # load model from Hugging Face model card directly (You need a Hugging Face token)
     diar_model = SortformerEncLabelModel.from_pretrained("nvidia/diar_sortformer_4spk-v1")
     diar_model.eval()
@@ -3025,6 +3264,8 @@ if __name__ == "__main__":
         main_process(path, do_vad=args.vad, LLM=args.LLM, use_demucs=args.demucs,
                      use_sepreformer=args.sepreformer, overlap_threshold=args.overlap_threshold,
                      flowse_denoiser=flowse_denoiser, sepreformer_separator=sepreformer_separator,
-                     embedding_model=embedding_model, panns_model=panns_model)
+                     embedding_model=embedding_model, panns_model=panns_model,
+                     speaker_embedder=speaker_embedder,
+                     speaker_link_threshold=args.speaker_link_threshold)
 end_time = time.time()
 print("Total time:", end_time - start_time)
