@@ -118,8 +118,9 @@ def _apply_sortformer_segment_padding_from_args(
     return df
 audio_count = 0
 # Limit diarization chunks to under 3 minutes, preferring VAD-detected silences as cut points.
-MAX_DIA_CHUNK_DURATION = 3 * 60  # 3 minutes
+MAX_DIA_CHUNK_DURATION = 2 * 60  # 3 minutes
 MIN_SPLIT_SILENCE = 0.3  # seconds of silence required for splitting (more sensitive)
+MIN_EMBED_DURATION = 0.5  # seconds; skip embedding if audio is shorter
 QWEN_3_OMNI_PORT = "11500"
 class RoverEnsembler:
     """
@@ -406,6 +407,96 @@ class RepetitionFilter:
 
         return True
 
+import subprocess
+import tempfile
+import hashlib
+from pathlib import Path
+import subprocess
+import os
+
+def convert_opus_to_wav_cached(audio_path: str, target_sr: int, cache_dir: str, logger, ffmpeg_threads: int = 1):
+    """
+    .opus/.ogg를 cache_dir에 wav로 변환해 캐시합니다.
+    이미 캐시된 wav가 있고 입력보다 최신이면 재사용합니다.
+    """
+    lower = audio_path.lower()
+    if not (lower.endswith(".opus") or lower.endswith(".ogg")):
+        return audio_path
+
+    os.makedirs(cache_dir, exist_ok=True)
+
+    # 충돌 방지: (경로+mtime) 기반 해시로 파일명 생성
+    p = Path(audio_path)
+    key = f"{str(p.resolve())}|{p.stat().st_mtime}|{p.stat().st_size}"
+    h = hashlib.md5(key.encode("utf-8")).hexdigest()[:16]
+    out_wav = os.path.join(cache_dir, f"{p.stem}.{h}.wav")
+
+    # 캐시 hit이면 리턴
+    if os.path.exists(out_wav):
+        return out_wav
+
+    cmd = [
+        "ffmpeg", "-y",
+        "-threads", str(int(ffmpeg_threads)),   # 병렬 실행 시 프로세스당 스레드 제한 추천
+        "-i", audio_path,
+        "-ac", "1",
+        "-ar", str(int(target_sr)),
+        "-sample_fmt", "s16",
+        out_wav,
+    ]
+
+    logger.info(f"[OPUS][CACHE] {audio_path} -> {out_wav}")
+    proc = subprocess.run(cmd, capture_output=True, text=True)
+    if proc.returncode != 0 or (not os.path.exists(out_wav)):
+        logger.error(f"[OPUS][CACHE] ffmpeg failed.\nSTDERR:\n{proc.stderr}")
+        raise RuntimeError("ffmpeg opus->wav conversion failed")
+
+    return out_wav
+
+def convert_opus_to_wav_if_needed(audio_path: str, target_sr: int, logger):
+    """
+    If input is .opus (or .ogg), convert to a temporary wav file and return the new path.
+    Returns: (processing_path, temp_dir_or_None)
+    """
+    lower = audio_path.lower()
+    if not (lower.endswith(".opus") or lower.endswith(".ogg")):
+        return audio_path, None
+
+    temp_dir = tempfile.mkdtemp(prefix="opus2wav_")
+    out_wav = os.path.join(temp_dir, "converted.wav")
+
+    # Prefer ffmpeg for robust opus decode
+    cmd = [
+        "ffmpeg", "-y",
+        "-i", audio_path,
+        "-ac", "1",
+        "-ar", str(int(target_sr)),
+        "-sample_fmt", "s16",
+        out_wav,
+    ]
+
+    try:
+        logger.info(f"[OPUS] Converting to wav via ffmpeg: {audio_path} -> {out_wav}")
+        proc = subprocess.run(cmd, capture_output=True, text=True)
+        if proc.returncode != 0 or (not os.path.exists(out_wav)):
+            logger.error(f"[OPUS] ffmpeg conversion failed.\nSTDERR:\n{proc.stderr}")
+            raise RuntimeError("ffmpeg opus->wav conversion failed")
+        return out_wav, temp_dir
+    except Exception as e:
+        # As a fallback, try pydub (still requires ffmpeg underneath in most envs)
+        logger.warning(f"[OPUS] ffmpeg path failed, trying pydub fallback: {e}")
+        try:
+            seg = AudioSegment.from_file(audio_path)
+            seg = seg.set_channels(1).set_frame_rate(int(target_sr)).set_sample_width(2)
+            seg.export(out_wav, format="wav")
+            if not os.path.exists(out_wav):
+                raise RuntimeError("pydub export failed")
+            return out_wav, temp_dir
+        except Exception as e2:
+            logger.error(f"[OPUS] pydub fallback also failed: {e2}")
+            # cleanup
+            shutil.rmtree(temp_dir, ignore_errors=True)
+            raise
 
 @time_logger
 def standardization(audio):
@@ -1112,12 +1203,27 @@ def identify_speaker_with_embedding(audio_segment, sample_rate, reference_embedd
     else:
         audio_16k = audio_segment
 
+    # Skip if too short for TDNN receptive field
+    if len(audio_16k) < int(MIN_EMBED_DURATION * 16000):
+        logger.warning(
+            f"Embedding skip: segment too short ({len(audio_16k)/16000:.2f}s < {MIN_EMBED_DURATION}s); "
+            f"falling back to first candidate {speaker_labels[0] if speaker_labels else 'Unknown'}"
+        )
+        return speaker_labels[0] if speaker_labels else None
+
     # Convert to tensor
     audio_tensor = torch.tensor(audio_16k, dtype=torch.float32).unsqueeze(0).to(device)
 
-    # Extract embedding
-    with torch.inference_mode():
-        embedding = embedding_model(audio_tensor)
+    # Extract embedding (guard against short/invalid audio)
+    try:
+        with torch.inference_mode():
+            embedding = embedding_model(audio_tensor)
+    except Exception as e:
+        logger.warning(
+            f"Embedding model failed on segment ({len(audio_16k)/16000:.2f}s): {e}. "
+            f"Falling back to first candidate {speaker_labels[0] if speaker_labels else 'Unknown'}"
+        )
+        return speaker_labels[0] if speaker_labels else None
 
     # Compare with reference embeddings using cosine similarity
     best_speaker = None
@@ -1231,11 +1337,23 @@ def process_overlapping_segments_with_separation(segment_list, audio, overlap_th
                     seg_audio_16k = librosa.resample(seg_audio, orig_sr=sample_rate, target_sr=16000)
                 else:
                     seg_audio_16k = seg_audio
+
+                if len(seg_audio_16k) < int(MIN_EMBED_DURATION * 16000):
+                    logger.debug(
+                        f"Skipping reference embedding for {speaker}: segment too short "
+                        f"({len(seg_audio_16k)/16000:.2f}s < {MIN_EMBED_DURATION}s)"
+                    )
+                    continue
+
                 seg_tensor = torch.tensor(seg_audio_16k, dtype=torch.float32).unsqueeze(0).to(device)
-                with torch.inference_mode():
-                    embedding = embedding_model(seg_tensor)
-                reference_embeddings[speaker] = embedding
-                break
+                try:
+                    with torch.inference_mode():
+                        embedding = embedding_model(seg_tensor)
+                    reference_embeddings[speaker] = embedding
+                    break
+                except Exception as e:
+                    logger.warning(f"Failed to compute reference embedding for {speaker}: {e}")
+                    continue
 
     # 2. Process overlap pairs
     for pair_idx, pair in enumerate(overlapping_pairs):
@@ -2510,325 +2628,336 @@ def main_process(audio_path, save_path=None, audio_name=None,
                  speaker_embedder = None,
                  speaker_link_threshold: float = 0.75):
 
-    if not audio_path.endswith((".mp3", ".wav", ".flac", ".m4a", ".aac")):
-        logger.warning(f"Unsupported file type: {audio_path}")
-    # 오디오 convert_mono and split_wav_files_2min temp file 만들기.
-
-    # for a single audio from path Ïaaa/bbb/ccc.wav ---> save to aaa/bbb_processed/ccc/ccc_0.wav
-    audio_name = audio_name or os.path.splitext(os.path.basename(audio_path))[0]
-    suffix = "dia3" if args.dia3 else "ori"
-    save_path = save_path or os.path.join(
-        os.path.dirname(audio_path), "_final", f"-sepreformer-{args.sepreformer}" +f"-demucs-{args.demucs}"  + f"-vad-{do_vad}"+ f"-diaModel-{suffix}"
-        # initial prompt off or on
-        + f"-initPrompt-{args.initprompt}"
-        + f"-merge_gap-{args.merge_gap}" +f"-seg_th-{args.seg_th}"+ f"-cl_min-{args.min_cluster_size}" +f"-cl-th-{args.clust_th}"+ f"-LLM-{LLM}", audio_name
-    )
-    os.makedirs(save_path, exist_ok=True)
-    logger.debug(
-        f"Processing audio: {audio_name}, from {audio_path}, save to: {save_path}"
-    )
-
-    logger.info(
-        "Step 0: Preprocess all audio files --> 24k sample rate + wave format + loudnorm + bit depth 16"
-    )
-    audio = standardization(audio_path)
-    diar_chunks, temp_chunk_dir = prepare_diarization_chunks(audio_path, audio)
-
-    # Calculate total audio duration
-    audio_duration = len(audio["waveform"]) / audio["sample_rate"]
-    logger.info(f"Total audio duration: {audio_duration:.2f} seconds")
-
-    logger.info("Step 2: Speaker Diarization")
-    dia_start = time.time()
-
-
-    diarization_frames = []
+    
+    proc_audio_path = audio_path
+    opus_temp_dir = None
     try:
-        for chunk in diar_chunks:
-            predicted_segments, _ = diar_model.diarize(
-                audio=chunk["path"], batch_size=1, include_tensor_outputs=True
-            )
-            chunk_df = sortformer_dia(predicted_segments)
-            if not chunk_df.empty:
-                chunk_df["start"] += chunk["offset"]
-                chunk_df["end"] += chunk["offset"]
-                chunk_df = _apply_sortformer_segment_padding_from_args(
-                    chunk_df, args=args, logger=logger, audio_duration=audio_duration
+        target_sr = int(cfg["entrypoint"]["SAMPLE_RATE"])
+        proc_audio_path, opus_temp_dir = convert_opus_to_wav_if_needed(
+            audio_path, target_sr=target_sr, logger=logger
+        )
+
+        if not proc_audio_path.endswith((".mp3", ".wav", ".flac", ".m4a", ".aac", ".opus")):
+            logger.warning(f"Unsupported file type: {proc_audio_path}")
+
+        # for a single audio from path Ïaaa/bbb/ccc.wav ---> save to aaa/bbb_processed/ccc/ccc_0.wav
+        audio_name = audio_name or os.path.splitext(os.path.basename(audio_path))[0]
+        suffix = "dia3" if args.dia3 else "ori"
+        save_path = save_path or os.path.join(
+            os.path.dirname(audio_path), "_final", f"-sepreformer-{args.sepreformer}" +f"-demucs-{args.demucs}"  + f"-vad-{do_vad}"+ f"-diaModel-{suffix}"
+            # initial prompt off or on
+            + f"-initPrompt-{args.initprompt}"
+            + f"-merge_gap-{args.merge_gap}" +f"-seg_th-{args.seg_th}"+ f"-cl_min-{args.min_cluster_size}" +f"-cl-th-{args.clust_th}"+ f"-LLM-{LLM}", audio_name
+        )
+        os.makedirs(save_path, exist_ok=True)
+        logger.debug(
+            f"Processing audio: {audio_name}, from {audio_path}, save to: {save_path}"
+        )
+
+        logger.info(
+            "Step 0: Preprocess all audio files --> 24k sample rate + wave format + loudnorm + bit depth 16"
+        )
+        audio = standardization(audio_path)
+        diar_chunks, temp_chunk_dir = prepare_diarization_chunks(audio_path, audio)
+
+        # Calculate total audio duration
+        audio_duration = len(audio["waveform"]) / audio["sample_rate"]
+        logger.info(f"Total audio duration: {audio_duration:.2f} seconds")
+
+        logger.info("Step 2: Speaker Diarization")
+        dia_start = time.time()
+
+
+        diarization_frames = []
+        try:
+            for chunk in diar_chunks:
+                predicted_segments, _ = diar_model.diarize(
+                    audio=chunk["path"], batch_size=1, include_tensor_outputs=True
                 )
-            diarization_frames.append(chunk_df)
-    finally:
-        if temp_chunk_dir:
-            shutil.rmtree(temp_chunk_dir, ignore_errors=True)
+                chunk_df = sortformer_dia(predicted_segments)
+                if not chunk_df.empty:
+                    chunk_df["start"] += chunk["offset"]
+                    chunk_df["end"] += chunk["offset"]
+                    chunk_df = _apply_sortformer_segment_padding_from_args(
+                        chunk_df, args=args, logger=logger, audio_duration=audio_duration
+                    )
+                diarization_frames.append(chunk_df)
+        finally:
+            if temp_chunk_dir:
+                shutil.rmtree(temp_chunk_dir, ignore_errors=True)
 
-    if diarization_frames:
-        diarization_frames = align_speakers_across_chunks(
-            diarization_frames,
-            audio_info=audio,
-            embedder=speaker_embedder,
-            similarity_threshold=speaker_link_threshold,
-        )
+        if diarization_frames:
+            diarization_frames = align_speakers_across_chunks(
+                diarization_frames,
+                audio_info=audio,
+                embedder=speaker_embedder,
+                similarity_threshold=speaker_link_threshold,
+            )
 
-    if diarization_frames:
-        speakerdia = pd.concat(diarization_frames, ignore_index=True)
-    else:
-        speakerdia = pd.DataFrame(columns=["segment", "label", "speaker", "start", "end"])
-    ori_list = df_to_list(speakerdia)
-    dia_end = time.time()
+        if diarization_frames:
+            speakerdia = pd.concat(diarization_frames, ignore_index=True)
+        else:
+            speakerdia = pd.DataFrame(columns=["segment", "label", "speaker", "start", "end"])
+        ori_list = df_to_list(speakerdia)
+        dia_end = time.time()
 
-    # Calculate VAD + Sortformer RT factor
-    vad_sortformer_processing_time = dia_end - dia_start
-    vad_sortformer_rt = vad_sortformer_processing_time / audio_duration if audio_duration > 0 else 0
-    logger.info(f"VAD + Sortformer - Processing time: {vad_sortformer_processing_time:.2f}s, RT factor: {vad_sortformer_rt:.4f}")
+        # Calculate VAD + Sortformer RT factor
+        vad_sortformer_processing_time = dia_end - dia_start
+        vad_sortformer_rt = vad_sortformer_processing_time / audio_duration if audio_duration > 0 else 0
+        logger.info(f"VAD + Sortformer - Processing time: {vad_sortformer_processing_time:.2f}s, RT factor: {vad_sortformer_rt:.4f}")
 
-    # TEST
-    ######################
-    segment_list = ori_list
-    segment_list = split_long_segments(segment_list)
-    ######################
+        # TEST
+        ######################
+        segment_list = ori_list
+        segment_list = split_long_segments(segment_list)
+        ######################
 
-    # [수정됨] Step 3를 Step 2.5보다 먼저 실행!
-    # Step 3: Background Music Detection and Removal
-    # SepReformer가 실행되기 전에 전체 오디오를 먼저 깨끗하게 만듭니다.
-    logger.info("Step 3: Background Music Detection and Removal")
-    # padding을 주어 ASR 타임스탬프 오차 범위를 커버
-    audio, segment_demucs_flags = preprocess_segments_with_demucs(segment_list, audio, panns_model=panns_model, use_demucs=use_demucs, padding=0.5)
+        # [수정됨] Step 3를 Step 2.5보다 먼저 실행!
+        # Step 3: Background Music Detection and Removal
+        # SepReformer가 실행되기 전에 전체 오디오를 먼저 깨끗하게 만듭니다.
+        logger.info("Step 3: Background Music Detection and Removal")
+        # padding을 주어 ASR 타임스탬프 오차 범위를 커버
+        audio, segment_demucs_flags = preprocess_segments_with_demucs(segment_list, audio, panns_model=panns_model, use_demucs=use_demucs, padding=0.5)
 
-    # [수정됨] 이제 깨끗해진 audio를 가지고 SepReformer 실행
-    # Step 2.5: Overlap control using SepReformer
-    logger.info("Step 2.5: Overlap Control with SepReformer")
-    separation_time = 0.0
-    if use_sepreformer and sepreformer_separator is not None and embedding_model is not None:
-        separation_start = time.time()
-        # 여기서 audio는 이미 Demucs 처리가 된 상태입니다.
-        audio, segment_list = process_overlapping_segments_with_separation(
-            segment_list,
-            audio,
-            overlap_threshold=overlap_threshold,
-            separator=sepreformer_separator,
-            embedding_model=embedding_model
-        )
-        separation_end = time.time()
-        separation_time = separation_end - separation_start
+        # [수정됨] 이제 깨끗해진 audio를 가지고 SepReformer 실행
+        # Step 2.5: Overlap control using SepReformer
+        logger.info("Step 2.5: Overlap Control with SepReformer")
+        separation_time = 0.0
+        if use_sepreformer and sepreformer_separator is not None and embedding_model is not None:
+            separation_start = time.time()
+            # 여기서 audio는 이미 Demucs 처리가 된 상태입니다.
+            audio, segment_list = process_overlapping_segments_with_separation(
+                segment_list,
+                audio,
+                overlap_threshold=overlap_threshold,
+                separator=sepreformer_separator,
+                embedding_model=embedding_model
+            )
+            separation_end = time.time()
+            separation_time = separation_end - separation_start
 
-        # Calculate SepReformer RT factor
-        separation_rt = separation_time / audio_duration if audio_duration > 0 else 0
-        logger.info(f"SepReformer separation - Processing time: {separation_time:.2f}s, RT factor: {separation_rt:.4f}")
-    else:
-        logger.info("SepReformer overlap separation skipped (flag disabled)")
-        
-    logger.info("Step 4: ASR (Automatic Speech Recognition)")
-    if args.ASRMoE:
-        asr_start = time.time()
-
-        asr_result, whisper_time, alignment_time = asr_MoE(
-            segment_list,
-            audio,
-            segment_demucs_flags=segment_demucs_flags,
-            enable_word_timestamps=args.whisperx_word_timestamps,
-            device=device_name
-        )
-
-        asr_end = time.time()
-
-        dia_time = dia_end-dia_start
-        asr_time = whisper_time
-    else:
-        asr_start = time.time()
-
-        asr_result = asr(segment_list, audio)
-
-        asr_end = time.time()
-
-        dia_time = dia_end-dia_start
-        asr_time = asr_end-asr_start
-        alignment_time = 0.0
-
-    # Calculate Whisper large v3 RT factor
-    whisper_processing_time = asr_time
-    whisper_rt = whisper_processing_time / audio_duration if audio_duration > 0 else 0
-
-    # Calculate WhisperX alignment RT factor
-    alignment_rt = alignment_time / audio_duration if audio_duration > 0 else 0
-
-    if LLM == "case_0":
-        print("LLM case_0")
-        filtered_list = asr_result
-        print(f"ASR result contains {len(filtered_list)} segments")
-
-
-
-
-    # LLM post diarization start
-    ####################################################################################################
-    # "LLM 불러서 post-processing 하는 것"
-    elif LLM == "case_2":
-        print(f"asr_result len: {len(asr_result)}")
-        print("Warning: llm_inference functions are commented out. Using ASR results directly.")
-        filtered_list = asr_result
-        
-
-    else:
-        raise ValueError("LLM 변수는 case_0, case_1, case_2 중 하나여야 한다.")
-
-    ############################################################################################################
-        # LLM post diarization end
-
-    # Step 4.5: Add Qwen3-Omni captions (if enabled)
-    caption_time = 0.0
-    if args.qwen3omni:
-        logger.info("Step 4.5: Adding Qwen3-Omni captions")
-        filtered_list, caption_time = add_qwen3omni_caption(filtered_list, audio, save_path)
-    else:
-        logger.info("Step 4.5: Qwen3-Omni caption generation skipped (flag disabled)")
-
-    # Calculate Qwen3-Omni RT factor
-    caption_rt = caption_time / audio_duration if audio_duration > 0 else 0
-
-    # Step 4.6: Apply FlowSE denoising to sepreformer segments (if enabled)
-    denoise_time = 0.0
-    if args.sepreformer and flowse_denoiser is not None:
-        logger.info("Step 4.6: Applying FlowSE denoising to sepreformer segments")
-        filtered_list, denoise_time = apply_flowse_denoising(
-            filtered_list,
-            audio,
-            save_path,
-            denoiser=flowse_denoiser,
-            use_asr_moe=args.ASRMoE
-        )
-    else:
-        logger.info("Step 4.6: FlowSE denoising skipped (sepreformer flag disabled or denoiser not loaded)")
-
-    # Calculate FlowSE denoising RT factor
-    denoise_rt = denoise_time / audio_duration if audio_duration > 0 else 0
-
-    # Print all timing information
-    print(f"\n{'='*60}")
-    print(f"Audio duration: {audio_duration:.2f} seconds ({audio_duration/60:.2f} minutes)")
-    print(f"{'='*60}")
-    print(f"VAD + Sortformer:")
-    print(f"  - Processing time: {dia_time:.2f} seconds")
-    print(f"  - RT factor: {vad_sortformer_rt:.4f}")
-    print(f"{'='*60}")
-    if use_sepreformer:
-        print(f"SepReformer Overlap Separation:")
-        print(f"  - Processing time: {separation_time:.2f} seconds")
-        print(f"  - RT factor: {separation_rt:.4f}")
-        print(f"{'='*60}")
-    print(f"Whisper large v3:")
-    print(f"  - Processing time: {asr_time:.2f} seconds")
-    print(f"  - RT factor: {whisper_rt:.4f}")
-    print(f"{'='*60}")
-    if args.whisperx_word_timestamps:
-        print(f"WhisperX Alignment:")
-        print(f"  - Processing time: {alignment_time:.2f} seconds")
-        print(f"  - RT factor: {alignment_rt:.4f}")
-        print(f"{'='*60}")
-    if args.qwen3omni:
-        print(f"Qwen3-Omni Caption:")
-        print(f"  - Processing time: {caption_time:.2f} seconds")
-        print(f"  - RT factor: {caption_rt:.4f}")
-        print(f"{'='*60}")
-    if args.sepreformer and denoise_time > 0:
-        print(f"FlowSE Denoising:")
-        print(f"  - Processing time: {denoise_time:.2f} seconds")
-        print(f"  - RT factor: {denoise_rt:.4f}")
-        print(f"{'='*60}")
-    print()
-
-    logger.info("Step 5: Write result into MP3 and JSON file")
-    print(f"Exporting {len(filtered_list)} segments to MP3 and JSON...")
-    export_segments_with_enhanced_audio(audio, filtered_list, save_path, audio_name)
-
-    # 한국어 g2p 후처리
-    if args.korean:
-        ko_process_json(filtered_list)
-
-    cleaned_list = []
-    for item in filtered_list:
-        # 얕은 복사(copy)를 통해 원본 filtered_list에는 영향 주지 않도록 함
-        clean_item = item.copy()
-        
-        # 1. 'enhanced_audio' (오디오 행렬) 키가 있으면 삭제
-        if "enhanced_audio" in clean_item:
-            del clean_item["enhanced_audio"]
-        # 1-2. denoised_audio_path는 최종 JSON에 포함하지 않음
-        if "denoised_audio_path" in clean_item:
-            del clean_item["denoised_audio_path"]
+            # Calculate SepReformer RT factor
+            separation_rt = separation_time / audio_duration if audio_duration > 0 else 0
+            logger.info(f"SepReformer separation - Processing time: {separation_time:.2f}s, RT factor: {separation_rt:.4f}")
+        else:
+            logger.info("SepReformer overlap separation skipped (flag disabled)")
             
-        # 2. (혹시 모를 에러 방지) Numpy float/int 타입을 Python native 타입으로 변환
-        for k, v in clean_item.items():
-            if hasattr(v, 'item'):  # numpy 타입인 경우
-                clean_item[k] = v.item()
+        logger.info("Step 4: ASR (Automatic Speech Recognition)")
+        if args.ASRMoE:
+            asr_start = time.time()
+
+            asr_result, whisper_time, alignment_time = asr_MoE(
+                segment_list,
+                audio,
+                segment_demucs_flags=segment_demucs_flags,
+                enable_word_timestamps=args.whisperx_word_timestamps,
+                device=device_name
+            )
+
+            asr_end = time.time()
+
+            dia_time = dia_end-dia_start
+            asr_time = whisper_time
+        else:
+            asr_start = time.time()
+
+            asr_result = asr(segment_list, audio)
+
+            asr_end = time.time()
+
+            dia_time = dia_end-dia_start
+            asr_time = asr_end-asr_start
+            alignment_time = 0.0
+
+        # Calculate Whisper large v3 RT factor
+        whisper_processing_time = asr_time
+        whisper_rt = whisper_processing_time / audio_duration if audio_duration > 0 else 0
+
+        # Calculate WhisperX alignment RT factor
+        alignment_rt = alignment_time / audio_duration if audio_duration > 0 else 0
+
+        if LLM == "case_0":
+            print("LLM case_0")
+            filtered_list = asr_result
+            print(f"ASR result contains {len(filtered_list)} segments")
+
+
+
+
+        # LLM post diarization start
+        ####################################################################################################
+        # "LLM 불러서 post-processing 하는 것"
+        elif LLM == "case_2":
+            print(f"asr_result len: {len(asr_result)}")
+            print("Warning: llm_inference functions are commented out. Using ASR results directly.")
+            filtered_list = asr_result
+            
+
+        else:
+            raise ValueError("LLM 변수는 case_0, case_1, case_2 중 하나여야 한다.")
+
+        ############################################################################################################
+            # LLM post diarization end
+
+        # Step 4.5: Add Qwen3-Omni captions (if enabled)
+        caption_time = 0.0
+        if args.qwen3omni:
+            logger.info("Step 4.5: Adding Qwen3-Omni captions")
+            filtered_list, caption_time = add_qwen3omni_caption(filtered_list, audio, save_path)
+        else:
+            logger.info("Step 4.5: Qwen3-Omni caption generation skipped (flag disabled)")
+
+        # Calculate Qwen3-Omni RT factor
+        caption_rt = caption_time / audio_duration if audio_duration > 0 else 0
+
+        # Step 4.6: Apply FlowSE denoising to sepreformer segments (if enabled)
+        denoise_time = 0.0
+        if args.sepreformer and flowse_denoiser is not None:
+            logger.info("Step 4.6: Applying FlowSE denoising to sepreformer segments")
+            filtered_list, denoise_time = apply_flowse_denoising(
+                filtered_list,
+                audio,
+                save_path,
+                denoiser=flowse_denoiser,
+                use_asr_moe=args.ASRMoE
+            )
+        else:
+            logger.info("Step 4.6: FlowSE denoising skipped (sepreformer flag disabled or denoiser not loaded)")
+
+        # Calculate FlowSE denoising RT factor
+        denoise_rt = denoise_time / audio_duration if audio_duration > 0 else 0
+
+        # Print all timing information
+        print(f"\n{'='*60}")
+        print(f"Audio duration: {audio_duration:.2f} seconds ({audio_duration/60:.2f} minutes)")
+        print(f"{'='*60}")
+        print(f"VAD + Sortformer:")
+        print(f"  - Processing time: {dia_time:.2f} seconds")
+        print(f"  - RT factor: {vad_sortformer_rt:.4f}")
+        print(f"{'='*60}")
+        if use_sepreformer:
+            print(f"SepReformer Overlap Separation:")
+            print(f"  - Processing time: {separation_time:.2f} seconds")
+            print(f"  - RT factor: {separation_rt:.4f}")
+            print(f"{'='*60}")
+        print(f"Whisper large v3:")
+        print(f"  - Processing time: {asr_time:.2f} seconds")
+        print(f"  - RT factor: {whisper_rt:.4f}")
+        print(f"{'='*60}")
+        if args.whisperx_word_timestamps:
+            print(f"WhisperX Alignment:")
+            print(f"  - Processing time: {alignment_time:.2f} seconds")
+            print(f"  - RT factor: {alignment_rt:.4f}")
+            print(f"{'='*60}")
+        if args.qwen3omni:
+            print(f"Qwen3-Omni Caption:")
+            print(f"  - Processing time: {caption_time:.2f} seconds")
+            print(f"  - RT factor: {caption_rt:.4f}")
+            print(f"{'='*60}")
+        if args.sepreformer and denoise_time > 0:
+            print(f"FlowSE Denoising:")
+            print(f"  - Processing time: {denoise_time:.2f} seconds")
+            print(f"  - RT factor: {denoise_rt:.4f}")
+            print(f"{'='*60}")
+        print()
+
+        logger.info("Step 5: Write result into MP3 and JSON file")
+        print(f"Exporting {len(filtered_list)} segments to MP3 and JSON...")
+        export_segments_with_enhanced_audio(audio, filtered_list, save_path, audio_name)
+
+        # 한국어 g2p 후처리
+        if args.korean:
+            ko_process_json(filtered_list)
+
+        cleaned_list = []
+        for item in filtered_list:
+            # 얕은 복사(copy)를 통해 원본 filtered_list에는 영향 주지 않도록 함
+            clean_item = item.copy()
+            
+            # 1. 'enhanced_audio' (오디오 행렬) 키가 있으면 삭제
+            if "enhanced_audio" in clean_item:
+                del clean_item["enhanced_audio"]
+            # 1-2. denoised_audio_path는 최종 JSON에 포함하지 않음
+            if "denoised_audio_path" in clean_item:
+                del clean_item["denoised_audio_path"]
                 
-        cleaned_list.append(clean_item)
+            # 2. (혹시 모를 에러 방지) Numpy float/int 타입을 Python native 타입으로 변환
+            for k, v in clean_item.items():
+                if hasattr(v, 'item'):  # numpy 타입인 경우
+                    clean_item[k] = v.item()
+                    
+            cleaned_list.append(clean_item)
 
-    # Prepare output with RT factor metrics
-    output_data = {
-        "metadata": {
-            "audio_duration_seconds": audio_duration,
-            "audio_duration_minutes": audio_duration / 60,
-            "vad_sortformer": {
-                "processing_time_seconds": vad_sortformer_processing_time,
-                "rt_factor": vad_sortformer_rt
+        # Prepare output with RT factor metrics
+        output_data = {
+            "metadata": {
+                "audio_duration_seconds": audio_duration,
+                "audio_duration_minutes": audio_duration / 60,
+                "vad_sortformer": {
+                    "processing_time_seconds": vad_sortformer_processing_time,
+                    "rt_factor": vad_sortformer_rt
+                },
+                "whisper_large_v3": {
+                    "processing_time_seconds": whisper_processing_time,
+                    "rt_factor": whisper_rt
+                },
+                # [수정] filtered_list 대신 cleaned_list 길이 사용
+                "total_segments": len(cleaned_list)
             },
-            "whisper_large_v3": {
-                "processing_time_seconds": whisper_processing_time,
-                "rt_factor": whisper_rt
-            },
-            # [수정] filtered_list 대신 cleaned_list 길이 사용
-            "total_segments": len(cleaned_list)
-        },
-        # [수정] 여기서 filtered_list가 아닌 cleaned_list를 넣어야 합니다.
-        "segments": cleaned_list  
-    }
-
-    # Add WhisperX alignment metadata if enabled
-    if args.whisperx_word_timestamps:
-        output_data["metadata"]["whisperx_alignment"] = {
-            "processing_time_seconds": alignment_time,
-            "rt_factor": alignment_rt,
-            "enabled": True
+            # [수정] 여기서 filtered_list가 아닌 cleaned_list를 넣어야 합니다.
+            "segments": cleaned_list  
         }
 
-    # Add Qwen3-Omni caption metadata if enabled
-    if args.qwen3omni:
-        output_data["metadata"]["qwen3omni_caption"] = {
-            "processing_time_seconds": caption_time,
-            "rt_factor": caption_rt,
-            "enabled": True
-        }
+        # Add WhisperX alignment metadata if enabled
+        if args.whisperx_word_timestamps:
+            output_data["metadata"]["whisperx_alignment"] = {
+                "processing_time_seconds": alignment_time,
+                "rt_factor": alignment_rt,
+                "enabled": True
+            }
 
-    # Add SepReformer separation metadata if enabled
-    if use_sepreformer:
-        output_data["metadata"]["sepreformer_separation"] = {
-            "processing_time_seconds": separation_time,
-            "rt_factor": separation_rt,
-            "overlap_threshold_seconds": overlap_threshold,
-            "enabled": True
-        }
+        # Add Qwen3-Omni caption metadata if enabled
+        if args.qwen3omni:
+            output_data["metadata"]["qwen3omni_caption"] = {
+                "processing_time_seconds": caption_time,
+                "rt_factor": caption_rt,
+                "enabled": True
+            }
 
-    # Add FlowSE denoising metadata if enabled
-    if args.sepreformer and denoise_time > 0:
-        output_data["metadata"]["flowse_denoising"] = {
-            "processing_time_seconds": denoise_time,
-            "rt_factor": denoise_rt,
-            "enabled": True
-        }
+        # Add SepReformer separation metadata if enabled
+        if use_sepreformer:
+            output_data["metadata"]["sepreformer_separation"] = {
+                "processing_time_seconds": separation_time,
+                "rt_factor": separation_rt,
+                "overlap_threshold_seconds": overlap_threshold,
+                "enabled": True
+            }
 
-    final_path = os.path.join(save_path, audio_name + ".json")
-    with open(final_path, "w", encoding="utf-8") as f:
-        json.dump(output_data, f, ensure_ascii=False, indent=2)
+        # Add FlowSE denoising metadata if enabled
+        if args.sepreformer and denoise_time > 0:
+            output_data["metadata"]["flowse_denoising"] = {
+                "processing_time_seconds": denoise_time,
+                "rt_factor": denoise_rt,
+                "enabled": True
+            }
 
-    # Cleanup: remove intermediate FlowSE denoised_audio directory
-    denoise_dir = os.path.join(save_path, "denoised_audio")
-    if os.path.isdir(denoise_dir):
-        shutil.rmtree(denoise_dir, ignore_errors=True)
-        logger.info(f"Removed temporary denoised_audio directory: {denoise_dir}")
+        final_path = os.path.join(save_path, audio_name + ".json")
+        with open(final_path, "w", encoding="utf-8") as f:
+            json.dump(output_data, f, ensure_ascii=False, indent=2)
 
-    logger.info(f"All done, Saved to: {final_path}")
-    print(f"Processing complete! Results saved to: {final_path}")
-    print(f"Total segments processed: {len(filtered_list)}")
-    return final_path, filtered_list
+        # Cleanup: remove intermediate FlowSE denoised_audio directory
+        denoise_dir = os.path.join(save_path, "denoised_audio")
+        if os.path.isdir(denoise_dir):
+            shutil.rmtree(denoise_dir, ignore_errors=True)
+            logger.info(f"Removed temporary denoised_audio directory: {denoise_dir}")
+
+        logger.info(f"All done, Saved to: {final_path}")
+        print(f"Processing complete! Results saved to: {final_path}")
+        print(f"Total segments processed: {len(filtered_list)}")
+        return final_path, filtered_list
+    finally:
+        if opus_temp_dir:
+            shutil.rmtree(opus_temp_dir, ignore_errors=True)
 
 
 if __name__ == "__main__":
@@ -2987,19 +3116,28 @@ if __name__ == "__main__":
         default=False,
         help="Enable Sortformer segment boundary adjustment (pad_offset/pad_onset applied after model output).",
     )
+    parser.add_argument( "--sortformer-pad-offset", 
+                        type=float, 
+                        default=-0.24, 
+                        help="Seconds to add to segment end time (negative pulls ends earlier). Used with --sortformer-param.", )
+    
+    parser.add_argument( "--sortformer-pad-onset", 
+                        type=float, 
+                        default=0.0, 
+                        help="Seconds to add to segment start time (negative pulls starts earlier). Used with --sortformer-param.", )
+    
     parser.add_argument(
-        "--sortformer-pad-offset",
-        type=float,
-        default=-0.24,
-        help="Seconds to add to segment end time (negative pulls ends earlier). Used with --sortformer-param.",
+    "--opus_decode_workers",
+    type=int,
+    default=8,
+    help="Number of parallel workers for opus/ogg -> wav decoding pre-stage.",
     )
     parser.add_argument(
-        "--sortformer-pad-onset",
-        type=float,
-        default=0.0,
-        help="Seconds to add to segment start time (negative pulls starts earlier). Used with --sortformer-param.",
+        "--ffmpeg_threads_per_decode",
+        type=int,
+        default=1,
+        help="ffmpeg -threads per decode process (keep small when using many workers).",
     )
-
 
     args = parser.parse_args()
 
@@ -3233,13 +3371,48 @@ if __name__ == "__main__":
         raise FileNotFoundError(f"input_folder_path: {input_folder_path} not found")
 
     # Get only audio files in the specified directory (not recursive)
-    audio_extensions = ('.mp3', '.wav', '.flac', '.m4a', '.aac')
+    audio_extensions = ('.mp3', '.wav', '.flac', '.m4a', '.aac', '.opus')
     audio_paths = []
     for file in os.listdir(input_folder_path):
         if file.endswith(audio_extensions) and not ".temp" in file:
             audio_paths.append(os.path.join(input_folder_path, file))
 
     logger.debug(f"Scanning {len(audio_paths)} audio files in {input_folder_path} (non-recursive)")
+
+
+    import concurrent.futures
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    # (audio_paths 만든 직후)
+    target_sr = int(cfg["entrypoint"]["SAMPLE_RATE"])
+    opus_cache_dir = os.path.join(input_folder_path, f"_opus_cache_wav_{target_sr}")
+
+    # opus/ogg만 골라서 병렬 디코딩
+    to_decode = [p for p in audio_paths if p.lower().endswith((".opus", ".ogg"))]
+    if to_decode:
+        logger.info(f"[OPUS] Pre-decoding {len(to_decode)} files with {args.opus_decode_workers} workers...")
+        decoded_map = {}
+
+        def _job(p):
+            return p, convert_opus_to_wav_cached(
+                p,
+                target_sr=target_sr,
+                cache_dir=opus_cache_dir,
+                logger=logger,
+                ffmpeg_threads=args.ffmpeg_threads_per_decode,
+            )
+
+        with ThreadPoolExecutor(max_workers=int(args.opus_decode_workers)) as ex:
+            futures = [ex.submit(_job, p) for p in to_decode]
+            for fut in as_completed(futures):
+                src, dst = fut.result()
+                decoded_map[src] = dst
+
+        # audio_paths를 “변환된 wav 경로”로 치환
+        audio_paths = [decoded_map.get(p, p) for p in audio_paths]
+        logger.info("[OPUS] Pre-decoding done.")
+    else:
+        logger.info("[OPUS] No opus/ogg files found; skipping pre-decoding.")
 
     start_time = time.time()
     for path in audio_paths:

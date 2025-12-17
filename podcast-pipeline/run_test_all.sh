@@ -34,7 +34,7 @@ seg_ths=(0.11)
 min_cluster_sizes=(11)
 clust_ths=(0.5)
 #ASRMoE=(--ASRMoE --no-ASRMoE)
-ASRMoE=(--no-ASRMoE)
+ASRMoE=(--ASRMoE)
 # DEMUCS 플래그 조합 (배경음악 제거)
 # --demucs: PANNs로 배경음악 검출 후 Demucs로 보컬 추출
 # --no-demucs: 배경음악 제거 안 함 (기본값)
@@ -43,7 +43,7 @@ demucs_flags=(--demucs)
 # WhisperX 단어 수준 타임스탬프 플래그
 # --whisperx_word_timestamps: WhisperX 정렬을 통한 단어 수준 타임스탬프 활성화
 # --no-whisperx_word_timestamps: 단어 수준 타임스탬프 비활성화 (기본값)
-whisperx_flags=(--no-whisperx_word_timestamps)
+whisperx_flags=(--whisperx_word_timestamps)
 #whisperx_flags=(--whisperx_word_timestamps --no-whisperx_word_timestamps)
 # Qwen3-Omni 오디오 캡셔닝 플래그
 # --qwen3omni: Qwen3-Omni API를 통한 오디오 캡션 생성 활성화
@@ -102,7 +102,9 @@ for folder in "${folders[@]}"; do
                                     --clust_th "${clust}" \
                                     --merge_gap "${merge_gap}" \
                                     --overlap_threshold "${overlap_th}" \
-                                    --speaker-link-threshold "${speaker_link_th}"
+                                    --speaker-link-threshold "${speaker_link_th}"\
+                                    --opus_decode_workers 16\
+                                    --ffmpeg_threads_per_decode 1
                                 done
                               done
                             done
