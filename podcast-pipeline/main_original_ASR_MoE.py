@@ -414,10 +414,13 @@ from pathlib import Path
 import subprocess
 import os
 
+# 기존 main_original_ASR_MoE.py 코드 내 해당 함수를 아래 코드로 교체하세요.
+
 def convert_opus_to_wav_cached(audio_path: str, target_sr: int, cache_dir: str, logger, ffmpeg_threads: int = 1):
     """
     .opus/.ogg를 cache_dir에 wav로 변환해 캐시합니다.
     이미 캐시된 wav가 있고 입력보다 최신이면 재사용합니다.
+    [수정됨] 파일명에 특수문자가 포함되어 오류가 나는 것을 방지하기 위해 파일명을 정제(sanitize)합니다.
     """
     lower = audio_path.lower()
     if not (lower.endswith(".opus") or lower.endswith(".ogg")):
@@ -425,11 +428,18 @@ def convert_opus_to_wav_cached(audio_path: str, target_sr: int, cache_dir: str, 
 
     os.makedirs(cache_dir, exist_ok=True)
 
-    # 충돌 방지: (경로+mtime) 기반 해시로 파일명 생성
     p = Path(audio_path)
+    
+    # 충돌 방지: (경로+mtime+size) 기반 해시
     key = f"{str(p.resolve())}|{p.stat().st_mtime}|{p.stat().st_size}"
     h = hashlib.md5(key.encode("utf-8")).hexdigest()[:16]
-    out_wav = os.path.join(cache_dir, f"{p.stem}.{h}.wav")
+    
+    # [중요 수정] 원본 파일명(p.stem)에서 알파벳, 숫자, -, _, . 을 제외한 모든 문자를 _로 치환
+    # 예: "![CDATA[Title]]" -> "__CDATA_Title__"
+    safe_stem = re.sub(r'[^\w\-\.]', '_', p.stem)
+    
+    # 안전한 파일명 생성
+    out_wav = os.path.join(cache_dir, f"{safe_stem}.{h}.wav")
 
     # 캐시 hit이면 리턴
     if os.path.exists(out_wav):
@@ -437,7 +447,7 @@ def convert_opus_to_wav_cached(audio_path: str, target_sr: int, cache_dir: str, 
 
     cmd = [
         "ffmpeg", "-y",
-        "-threads", str(int(ffmpeg_threads)),   # 병렬 실행 시 프로세스당 스레드 제한 추천
+        "-threads", str(int(ffmpeg_threads)),   
         "-i", audio_path,
         "-ac", "1",
         "-ar", str(int(target_sr)),
@@ -445,11 +455,13 @@ def convert_opus_to_wav_cached(audio_path: str, target_sr: int, cache_dir: str, 
         out_wav,
     ]
 
-    logger.info(f"[OPUS][CACHE] {audio_path} -> {out_wav}")
+    # 로그에 원본 -> 변환 경로 명시
+    logger.info(f"[OPUS][CACHE] Converting...\n  Src: {audio_path}\n  Dst: {out_wav}")
+    
     proc = subprocess.run(cmd, capture_output=True, text=True)
     if proc.returncode != 0 or (not os.path.exists(out_wav)):
         logger.error(f"[OPUS][CACHE] ffmpeg failed.\nSTDERR:\n{proc.stderr}")
-        raise RuntimeError("ffmpeg opus->wav conversion failed")
+        raise RuntimeError(f"ffmpeg opus->wav conversion failed for {audio_path}")
 
     return out_wav
 
@@ -3371,14 +3383,28 @@ if __name__ == "__main__":
         raise FileNotFoundError(f"input_folder_path: {input_folder_path} not found")
 
     # Get only audio files in the specified directory (not recursive)
-    audio_extensions = ('.mp3', '.wav', '.flac', '.m4a', '.aac', '.opus')
+    audio_extensions = ('.mp3', '.wav', '.flac', '.m4a', '.aac', '.opus', '.ogg')
     audio_paths = []
+    
     for file in os.listdir(input_folder_path):
-        if file.endswith(audio_extensions) and not ".temp" in file:
-            audio_paths.append(os.path.join(input_folder_path, file))
+        # 1. 지원하는 확장자 확인
+        if not file.lower().endswith(audio_extensions):
+            continue
+            
+        # 2. .temp 파일 제외
+        if ".temp" in file:
+            continue
+            
+        # 3. [중요] 캐시 폴더(_opus_cache...) 내의 파일이 리스트업 되는 것을 방지
+        # (os.listdir는 해당 폴더 직계 파일만 보므로 폴더 자체는 파일로 안 잡히지만, 
+        # 혹시 input_folder_path 자체가 캐시 폴더일 경우를 대비)
+        if "_opus_cache" in input_folder_path:
+            logger.warning(f"Skipping execution because input path looks like a cache dir: {input_folder_path}")
+            sys.exit(0)
+
+        audio_paths.append(os.path.join(input_folder_path, file))
 
     logger.debug(f"Scanning {len(audio_paths)} audio files in {input_folder_path} (non-recursive)")
-
 
     import concurrent.futures
     from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -3404,41 +3430,68 @@ if __name__ == "__main__":
 
         with ThreadPoolExecutor(max_workers=int(args.opus_decode_workers)) as ex:
             futures = [ex.submit(_job, p) for p in to_decode]
+            
             for fut in as_completed(futures):
-                src, dst = fut.result()
-                decoded_map[src] = dst
+                try:
+                    src, dst = fut.result()
+                    decoded_map[src] = dst
+                except Exception as e:
+                    # [중요 수정] 파일 하나가 실패해도 전체 프로세스가 죽지 않도록 예외 처리
+                    logger.error(f"❌ [OPUS] Failed to decode file, skipping: {e}")
+                    # 실패한 파일은 audio_paths에서 제거하기 위해 map에 넣지 않음
 
         # audio_paths를 “변환된 wav 경로”로 치환
-        audio_paths = [decoded_map.get(p, p) for p in audio_paths]
-        logger.info("[OPUS] Pre-decoding done.")
+        # decoded_map에 있는 경우(성공) 교체하고, .opus인데 실패해서 맵에 없으면 리스트에서 제외
+        new_audio_paths = []
+        for p in audio_paths:
+            if p in decoded_map:
+                new_audio_paths.append(decoded_map[p])
+            elif p.lower().endswith((".opus", ".ogg")):
+                # 오푸스 파일인데 디코딩 맵에 없으면 실패한 것이므로 제외
+                logger.warning(f"Skipping failed file: {p}")
+            else:
+                # wav, mp3 등 다른 파일은 그대로 유지
+                new_audio_paths.append(p)
+        
+        audio_paths = new_audio_paths
+        logger.info(f"[OPUS] Pre-decoding done. Valid files: {len(audio_paths)}")
     else:
         logger.info("[OPUS] No opus/ogg files found; skipping pre-decoding.")
 
     start_time = time.time()
+    start_time = time.time()
+    
+    # [수정됨] 성공한 파일 개수 카운트
+    success_count = 0
+    fail_count = 0
+
     for path in audio_paths:
+        try:
+            # 1. 파일 크기 체크: 1KB 미만이면 손상된 파일일 확률이 높으므로 건너뜀
+            if os.path.getsize(path) < 1024:
+                logger.warning(f"⚠️ [Skip] File too small ({os.path.getsize(path)} bytes): {path}")
+                fail_count += 1
+                continue
 
+            # 2. 메인 프로세스 실행 (개별 파일 단위 try-except 적용)
+            main_process(path, do_vad=args.vad, LLM=args.LLM, use_demucs=args.demucs,
+                         use_sepreformer=args.sepreformer, overlap_threshold=args.overlap_threshold,
+                         flowse_denoiser=flowse_denoiser, sepreformer_separator=sepreformer_separator,
+                         embedding_model=embedding_model, panns_model=panns_model,
+                         speaker_embedder=speaker_embedder,
+                         speaker_link_threshold=args.speaker_link_threshold)
+            
+            success_count += 1
 
-        # 폴더가 이미 있으면 넘어가는 로직
-        
-    #    # 1. main_process와 동일한 로직으로 예상 출력 폴더 경로를 생성합니다.
-    #     audio_name = os.path.splitext(os.path.basename(path))[0]
-    #     suffix = "dia3" if args.dia3 else "ori"
-    #     save_path_dir = os.path.join(
-    #         os.path.dirname(path) + "_processed_llm-twelve-cases" + f"-vad-{args.vad}"+ f"-diaModel-{suffix}" 
-    #         + f"-merge_gap-{args.merge_gap}" + f"-seg_th-{args.seg_th}"+ f"-cl_min-{args.min_cluster_size}" +f"-cl-th-{args.clust_th}"+ f"-LLM-{args.LLM}", audio_name
-    #     )
+        except Exception as e:
+            # [중요] 파일 하나가 실패해도 멈추지 않고 로그만 남기고 다음 파일로 넘어감
+            logger.error(f"❌ [Error] Failed to process file: {path}")
+            logger.error(f"   Reason: {e}")
+            fail_count += 1
+            continue
 
-    #     # 2. 해당 폴더가 이미 존재하는지 확인합니다.
-    #     if os.path.exists(save_path_dir):
-    #         logger.info(f"Output directory already exists, skipping: {save_path_dir}")
-    #         continue  # 폴더가 존재하면 다음 오디오 파일로 넘어갑니다.
-
-
-        main_process(path, do_vad=args.vad, LLM=args.LLM, use_demucs=args.demucs,
-                     use_sepreformer=args.sepreformer, overlap_threshold=args.overlap_threshold,
-                     flowse_denoiser=flowse_denoiser, sepreformer_separator=sepreformer_separator,
-                     embedding_model=embedding_model, panns_model=panns_model,
-                     speaker_embedder=speaker_embedder,
-                     speaker_link_threshold=args.speaker_link_threshold)
-end_time = time.time()
-print("Total time:", end_time - start_time)
+    end_time = time.time()
+    print(f"Directory processing finished.")
+    print(f" - Success: {success_count}")
+    print(f" - Failed: {fail_count}")
+    print(f"Total time: {end_time - start_time:.2f}s")

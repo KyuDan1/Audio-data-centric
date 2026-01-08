@@ -136,6 +136,12 @@ class VadFreeFasterWhisperPipeline(FasterWhisperPipeline):
         if isinstance(language, tuple):
             language = language[0]
 
+        # Validate task parameter
+        valid_tasks = ["transcribe", "translate"]
+        if task is not None and task not in valid_tasks:
+            print(f"Warning: Invalid task '{task}', defaulting to 'transcribe'")
+            task = "transcribe"
+
         if self.tokenizer is None:
             task = task or "transcribe"
             self.tokenizer = faster_whisper.tokenizer.Tokenizer(
@@ -146,7 +152,16 @@ class VadFreeFasterWhisperPipeline(FasterWhisperPipeline):
             )
         else:
             language = language or self.tokenizer.language_code
-            task = task or self.tokenizer.task
+            # Validate tokenizer's task before using it
+            if hasattr(self.tokenizer, 'task') and self.tokenizer.task in valid_tasks:
+                task = task or self.tokenizer.task
+            else:
+                task = task or "transcribe"
+
+            # Ensure task is valid before creating new tokenizer
+            if task not in valid_tasks:
+                task = "transcribe"
+
             if task != self.tokenizer.task or language != self.tokenizer.language_code:
                 self.tokenizer = faster_whisper.tokenizer.Tokenizer(
                     self.model.hf_tokenizer,
